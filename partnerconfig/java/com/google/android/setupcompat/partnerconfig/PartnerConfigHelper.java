@@ -88,6 +88,8 @@ public class PartnerConfigHelper {
 
   private static PartnerConfigHelper instance = null;
 
+  private final Context mContext;
+
   @VisibleForTesting Bundle resultBundle = null;
 
   @VisibleForTesting
@@ -145,6 +147,7 @@ public class PartnerConfigHelper {
     getPartnerConfigBundle(context);
 
     registerContentObserver(context);
+    mContext = context;
   }
 
   /**
@@ -153,7 +156,7 @@ public class PartnerConfigHelper {
    * are customized by the overlay APK.
    */
   public boolean isAvailable() {
-    return resultBundle != null && !resultBundle.isEmpty();
+    return (resultBundle != null && !resultBundle.isEmpty()) || mContext != null;
   }
 
   /**
@@ -163,7 +166,17 @@ public class PartnerConfigHelper {
    * overlay APK.
    */
   public boolean isPartnerConfigAvailable(PartnerConfig resourceConfig) {
-    return isAvailable() && resultBundle.containsKey(resourceConfig.getResourceName());
+    if (resultBundle != null && !resultBundle.isEmpty())
+      return resultBundle.containsKey(resourceConfig.getResourceName());
+    else {
+      String resType = resourceConfig.getResourceType().name().toLowerCase();
+      if (resType.equals("dimension"))
+        resType = "dimen";
+
+      int resId = mContext.getResources().getIdentifier(resourceConfig.getResourceName(), resType,
+          mContext.getPackageName());
+      return (resId != 0);
+    }
   }
 
   /**
@@ -281,9 +294,20 @@ public class PartnerConfigHelper {
 
       result = resource.getString(resId);
       partnerResourceCache.put(resourceConfig, result);
+      return result;
     } catch (NullPointerException exception) {
       // fall through
     }
+
+    Resources appResource = context.getResources();
+    int resIdApp = appResource.getIdentifier(resourceConfig.getResourceName(), "string",
+        context.getPackageName());
+
+    if (resIdApp != 0) {
+      result = appResource.getString(resIdApp);
+      partnerResourceCache.put(resourceConfig, result);
+    }
+
     return result;
   }
 
@@ -312,8 +336,19 @@ public class PartnerConfigHelper {
 
       result = resource.getStringArray(resId);
       Collections.addAll(listResult, result);
+      return listResult;
     } catch (NullPointerException exception) {
       // fall through
+    }
+
+    Resources appResource = context.getResources();
+    int resIdApp = appResource.getIdentifier(resourceConfig.getResourceName(), "array",
+        context.getPackageName());
+
+    if (resIdApp != 0) {
+      result = appResource.getStringArray(resIdApp);
+      Collections.addAll(listResult, result);
+      return listResult;
     }
 
     return listResult;
@@ -347,9 +382,20 @@ public class PartnerConfigHelper {
 
       result = resource.getBoolean(resId);
       partnerResourceCache.put(resourceConfig, result);
+      return result;
     } catch (NullPointerException | NotFoundException exception) {
       // fall through
     }
+
+    Resources appResource = context.getResources();
+    int resIdApp = appResource.getIdentifier(resourceConfig.getResourceName(), "bool",
+        context.getPackageName());
+
+    if (resIdApp != 0) {
+      result = appResource.getBoolean(resIdApp);
+      partnerResourceCache.put(resourceConfig, result);
+    }
+
     return result;
   }
 
@@ -396,8 +442,22 @@ public class PartnerConfigHelper {
       result =
           getDimensionFromTypedValue(
               context, (TypedValue) partnerResourceCache.get(resourceConfig));
+      return result;
     } catch (NullPointerException | NotFoundException exception) {
       // fall through
+    }
+
+    Resources appResource = context.getResources();
+    int resIdApp = appResource.getIdentifier(resourceConfig.getResourceName(), "dimen",
+        context.getPackageName());
+
+    if (resIdApp != 0) {
+      TypedValue value = getTypedValueFromResource(appResource, resIdApp,
+          TypedValue.TYPE_DIMENSION);
+      partnerResourceCache.put(resourceConfig, value);
+      result =
+          getDimensionFromTypedValue(
+              context, (TypedValue) partnerResourceCache.get(resourceConfig));
     }
     return result;
   }
@@ -440,8 +500,18 @@ public class PartnerConfigHelper {
 
       result = resource.getFraction(resId, 1, 1);
       partnerResourceCache.put(resourceConfig, result);
+      return result;
     } catch (NullPointerException | NotFoundException exception) {
       // fall through
+    }
+
+    Resources appResource = context.getResources();
+    int resIdApp = appResource.getIdentifier(resourceConfig.getResourceName(), "fraction",
+        context.getPackageName());
+
+    if (resIdApp != 0) {
+      result = appResource.getFraction(resIdApp, 1, 1);
+      partnerResourceCache.put(resourceConfig, result);
     }
     return result;
   }
@@ -473,8 +543,18 @@ public class PartnerConfigHelper {
 
       result = resource.getInteger(resId);
       partnerResourceCache.put(resourceConfig, result);
+      return result;
     } catch (NullPointerException | NotFoundException exception) {
       // fall through
+    }
+
+    Resources appResource = context.getResources();
+    int resIdApp = appResource.getIdentifier(resourceConfig.getResourceName(), "integer",
+        context.getPackageName());
+
+    if (resIdApp != 0) {
+      result = appResource.getInteger(resIdApp);
+      partnerResourceCache.put(resourceConfig, result);
     }
     return result;
   }
