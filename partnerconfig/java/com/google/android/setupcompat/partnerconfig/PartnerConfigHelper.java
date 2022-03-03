@@ -672,9 +672,9 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard DayNight supporting status unknown; return as false.");
+        Log.w(TAG, "SetupWizard DayNight supporting status unknown; return as true.");
         suwDayNightEnabledBundle = null;
-        return false;
+        return true;
       }
     }
 
@@ -697,9 +697,9 @@ public class PartnerConfigHelper {
       } catch (IllegalArgumentException | SecurityException exception) {
         Log.w(
             TAG,
-            "SetupWizard extended partner configs supporting status unknown; return as false.");
+            "SetupWizard extended partner configs supporting status unknown; return as true.");
         applyExtendedPartnerConfigBundle = null;
-        return false;
+        return true;
       }
     }
 
@@ -721,9 +721,9 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard dynamic color supporting status unknown; return as false.");
+        Log.w(TAG, "SetupWizard dynamic color supporting status unknown; return as true.");
         applyDynamicColorBundle = null;
-        return false;
+        return true;
       }
     }
 
