@@ -151,7 +151,7 @@ public class StatusBarMixin implements Mixin {
         Context context = partnerCustomizationLayout.getContext();
         isLight =
             PartnerConfigHelper.get(context)
-                .getBoolean(context, PartnerConfig.CONFIG_LIGHT_STATUS_BAR, false);
+                .getBoolean(context, PartnerConfig.CONFIG_LIGHT_STATUS_BAR, true);
       }
 
       if (isLight) {
