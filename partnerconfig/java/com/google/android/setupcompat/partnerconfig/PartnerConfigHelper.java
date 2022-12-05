@@ -69,6 +69,9 @@ public class PartnerConfigHelper {
   @VisibleForTesting
   public static final String IS_NEUTRAL_BUTTON_STYLE_ENABLED_METHOD = "isNeutralButtonStyleEnabled";
 
+  @VisibleForTesting
+  public static final String GET_SUW_DEFAULT_THEME_STRING_METHOD = "suwDefaultThemeString";
+
   @VisibleForTesting public static final String SUW_PACKAGE_NAME = "com.google.android.setupwizard";
   @VisibleForTesting public static final String MATERIAL_YOU_RESOURCE_SUFFIX = "_material_you";
 
@@ -81,6 +84,8 @@ public class PartnerConfigHelper {
   @VisibleForTesting public static Bundle applyDynamicColorBundle = null;
 
   @VisibleForTesting public static Bundle applyNeutralButtonStyleBundle = null;
+
+  @VisibleForTesting public static Bundle suwDefaultThemeBundle = null;
 
   private static PartnerConfigHelper instance = null;
 
@@ -95,8 +100,7 @@ public class PartnerConfigHelper {
 
   private static int savedConfigUiMode;
 
-  @VisibleForTesting
-  public static int savedOrientation = Configuration.ORIENTATION_PORTRAIT;
+  @VisibleForTesting public static int savedOrientation = Configuration.ORIENTATION_PORTRAIT;
 
   /**
    * When testing related to fake PartnerConfigHelper instance, should sync the following saved
@@ -702,6 +706,7 @@ public class PartnerConfigHelper {
     applyMaterialYouConfigBundle = null;
     applyDynamicColorBundle = null;
     applyNeutralButtonStyleBundle = null;
+    suwDefaultThemeBundle = null;
   }
 
   /**
@@ -789,6 +794,34 @@ public class PartnerConfigHelper {
 
     return (applyMaterialYouConfigBundle != null
         && applyMaterialYouConfigBundle.getBoolean(IS_MATERIAL_YOU_STYLE_ENABLED_METHOD, false));
+  }
+
+  /**
+   * Returns default glif theme name string from setupwizard, or if the setupwizard has not
+   * supported this api, return a null string.
+   */
+  @Nullable
+  public static String getSuwDefaultThemeString(@NonNull Context context) {
+    if (suwDefaultThemeBundle == null || suwDefaultThemeBundle.isEmpty()) {
+      try {
+        suwDefaultThemeBundle =
+            context
+                .getContentResolver()
+                .call(
+                    getContentUri(),
+                    GET_SUW_DEFAULT_THEME_STRING_METHOD,
+                    /* arg= */ null,
+                    /* extras= */ null);
+      } catch (IllegalArgumentException | SecurityException exception) {
+        Log.w(TAG, "SetupWizard default theme status unknown; return as null.");
+        suwDefaultThemeBundle = null;
+        return null;
+      }
+    }
+    if (suwDefaultThemeBundle == null || suwDefaultThemeBundle.isEmpty()) {
+      return null;
+    }
+    return suwDefaultThemeBundle.getString(GET_SUW_DEFAULT_THEME_STRING_METHOD);
   }
 
   /** Returns true if the SetupWizard supports the dynamic color during setup flow. */
