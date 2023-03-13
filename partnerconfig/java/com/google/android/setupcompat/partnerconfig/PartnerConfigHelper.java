@@ -46,7 +46,6 @@ public class PartnerConfigHelper {
 
   private static final String TAG = PartnerConfigHelper.class.getSimpleName();
 
-  @VisibleForTesting
   public static final String SUW_AUTHORITY = "com.google.android.setupwizard.partner";
 
   @VisibleForTesting public static final String SUW_GET_PARTNER_CONFIG_METHOD = "getOverlayConfig";
