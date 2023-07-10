@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "280c5ad1_d412dcdc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-07-10T10:22:24Z",
+      "side": 1,
+      "message": "This is exactly what Pixel SUW does for tablet/fold",
+      "revId": "bc116f3f7aebd2c0489c7a976cbaab22ee606575",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
