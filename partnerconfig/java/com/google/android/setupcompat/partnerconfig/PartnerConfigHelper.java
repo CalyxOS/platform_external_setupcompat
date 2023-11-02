@@ -46,6 +46,8 @@ public class PartnerConfigHelper {
 
   private static final String TAG = PartnerConfigHelper.class.getSimpleName();
 
+  private static boolean LOGV = Log.isLoggable(TAG, Log.VERBOSE);
+
   public static final String SUW_AUTHORITY = "com.google.android.setupwizard.partner";
 
   @VisibleForTesting public static final String SUW_GET_PARTNER_CONFIG_METHOD = "getOverlayConfig";
@@ -791,7 +793,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard DayNight supporting status unknown; return as true.");
+        logv("SetupWizard DayNight supporting status unknown; return as true.");
         suwDayNightEnabledBundle = null;
         return true;
       }
@@ -814,9 +816,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(
-            TAG,
-            "SetupWizard extended partner configs supporting status unknown; return as true.");
+        logv("SetupWizard extended partner configs supporting status unknown; return as true.");
         applyExtendedPartnerConfigBundle = null;
         return true;
       }
@@ -850,7 +850,7 @@ public class PartnerConfigHelper {
           return shouldApplyExtendedPartnerConfig(context);
         }
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard Material You configs supporting status unknown; return as false.");
+        logv("SetupWizard Material You configs supporting status unknown; return as false.");
         applyMaterialYouConfigBundle = null;
         return false;
       }
@@ -877,7 +877,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard default theme status unknown; return as null.");
+        logv("SetupWizard default theme status unknown; return as null.");
         suwDefaultThemeBundle = null;
         return null;
       }
@@ -901,7 +901,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard dynamic color supporting status unknown; return as true.");
+        logv("SetupWizard dynamic color supporting status unknown; return as true.");
         applyDynamicColorBundle = null;
         return true;
       }
@@ -924,9 +924,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(
-            TAG,
-            "SetupWizard one-pane support in embedded activity status unknown; return as false.");
+        logv("SetupWizard one-pane support in embedded activity status unknown; return as false.");
         applyEmbeddedActivityOnePaneBundle = null;
         return false;
       }
@@ -950,7 +948,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "Neutral button style supporting status unknown; return as false.");
+        logv("Neutral button style supporting status unknown; return as false.");
         applyNeutralButtonStyleBundle = null;
         return false;
       }
@@ -977,9 +975,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(
-            TAG,
-            "applyGlifThemeControlledTransition unknown; return applyGlifThemeControlledTransition"
+        logv("applyGlifThemeControlledTransition unknown; return applyGlifThemeControlledTransition"
                 + " as default value");
       }
     }
@@ -1049,6 +1045,12 @@ public class PartnerConfigHelper {
       contentObserver = null;
     } catch (SecurityException | NullPointerException | IllegalArgumentException e) {
       Log.w(TAG, "Failed to unregister content observer: " + e);
+    }
+  }
+
+  private static void logv(String msg) {
+    if (LOGV) {
+      Log.v(TAG, msg);
     }
   }
 }
