@@ -791,7 +791,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard DayNight supporting status unknown; return as true.");
+        Log.v(TAG, "SetupWizard DayNight supporting status unknown; return as true.");
         suwDayNightEnabledBundle = null;
         return true;
       }
@@ -814,7 +814,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(
+        Log.v(
             TAG,
             "SetupWizard extended partner configs supporting status unknown; return as true.");
         applyExtendedPartnerConfigBundle = null;
@@ -850,7 +850,7 @@ public class PartnerConfigHelper {
           return shouldApplyExtendedPartnerConfig(context);
         }
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard Material You configs supporting status unknown; return as false.");
+        Log.v(TAG, "SetupWizard Material You configs supporting status unknown; return as false.");
         applyMaterialYouConfigBundle = null;
         return false;
       }
@@ -877,7 +877,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard default theme status unknown; return as null.");
+        Log.v(TAG, "SetupWizard default theme status unknown; return as null.");
         suwDefaultThemeBundle = null;
         return null;
       }
@@ -901,7 +901,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "SetupWizard dynamic color supporting status unknown; return as true.");
+        Log.v(TAG, "SetupWizard dynamic color supporting status unknown; return as true.");
         applyDynamicColorBundle = null;
         return true;
       }
@@ -924,7 +924,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(
+        Log.v(
             TAG,
             "SetupWizard one-pane support in embedded activity status unknown; return as false.");
         applyEmbeddedActivityOnePaneBundle = null;
@@ -950,7 +950,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(TAG, "Neutral button style supporting status unknown; return as false.");
+        Log.v(TAG, "Neutral button style supporting status unknown; return as false.");
         applyNeutralButtonStyleBundle = null;
         return false;
       }
@@ -977,7 +977,7 @@ public class PartnerConfigHelper {
                     /* arg= */ null,
                     /* extras= */ null);
       } catch (IllegalArgumentException | SecurityException exception) {
-        Log.w(
+        Log.v(
             TAG,
             "applyGlifThemeControlledTransition unknown; return applyGlifThemeControlledTransition"
                 + " as default value");
