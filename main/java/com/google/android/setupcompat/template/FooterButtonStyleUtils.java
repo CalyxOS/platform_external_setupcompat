@@ -16,6 +16,9 @@
 
 package com.google.android.setupcompat.template;
 
+import static com.google.android.setupcompat.partnerconfig.PartnerConfigHelper.isFontWeightEnabled;
+
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -35,6 +38,7 @@ import android.util.TypedValue;
 import android.view.ViewGroup;
 import android.widget.Button;
 import androidx.annotation.ColorInt;
+import androidx.annotation.Nullable;
 import com.google.android.setupcompat.R;
 import com.google.android.setupcompat.internal.FooterButtonPartnerConfig;
 import com.google.android.setupcompat.internal.Preconditions;
@@ -45,6 +49,9 @@ import java.util.HashMap;
 /** Utils for updating the button style. */
 public class FooterButtonStyleUtils {
   private static final float DEFAULT_DISABLED_ALPHA = 0.26f;
+
+  // android.graphics.fonts.FontStyle.FontStyle#FONT_WEIGHT_NORMAL
+  private static final int FONT_WEIGHT_NORMAL = 400;
 
   private static final HashMap<Integer, ColorStateList> defaultTextColor = new HashMap<>();
 
@@ -67,6 +74,7 @@ public class FooterButtonStyleUtils {
             .setTextSizeConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_TEXT_SIZE)
             .setButtonMinHeight(PartnerConfig.CONFIG_FOOTER_BUTTON_MIN_HEIGHT)
             .setTextTypeFaceConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_FONT_FAMILY)
+            .setTextWeightConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_FONT_WEIGHT)
             .setTextStyleConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_TEXT_STYLE)
             .build();
     applyButtonPartnerResources(
@@ -104,6 +112,7 @@ public class FooterButtonStyleUtils {
             .setTextSizeConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_TEXT_SIZE)
             .setButtonMinHeight(PartnerConfig.CONFIG_FOOTER_BUTTON_MIN_HEIGHT)
             .setTextTypeFaceConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_FONT_FAMILY)
+            .setTextWeightConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_FONT_WEIGHT)
             .setTextStyleConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_TEXT_STYLE)
             .build();
     applyButtonPartnerResources(
@@ -121,7 +130,7 @@ public class FooterButtonStyleUtils {
       boolean isButtonIconAtEnd,
       FooterButtonPartnerConfig footerButtonPartnerConfig) {
 
-    // Save defualt text color for the partner config disable button text color not available.
+    // Save default text color for the partner config disable button text color not available.
     saveButtonDefaultTextColor(button);
 
     // If dynamic color enabled, these colors won't be overrode by partner config.
@@ -158,6 +167,7 @@ public class FooterButtonStyleUtils {
         context,
         button,
         footerButtonPartnerConfig.getButtonTextTypeFaceConfig(),
+        footerButtonPartnerConfig.getButtonTextWeightConfig(),
         footerButtonPartnerConfig.getButtonTextStyleConfig());
     FooterButtonStyleUtils.updateButtonRadiusWithPartnerConfig(
         context, button, footerButtonPartnerConfig.getButtonRadiusConfig());
@@ -340,10 +350,12 @@ public class FooterButtonStyleUtils {
     }
   }
 
+  @SuppressLint("NewApi") // Applying partner config should be guarded before Android S
   static void updateButtonTypeFaceWithPartnerConfig(
       Context context,
       Button button,
       PartnerConfig buttonTextTypeFaceConfig,
+      PartnerConfig buttonTextWeightConfig,
       PartnerConfig buttonTextStyleConfig) {
     String fontFamilyName =
         PartnerConfigHelper.get(context).getString(context, buttonTextTypeFaceConfig);
@@ -354,7 +366,19 @@ public class FooterButtonStyleUtils {
           PartnerConfigHelper.get(context)
               .getInteger(context, buttonTextStyleConfig, Typeface.NORMAL);
     }
-    Typeface font = Typeface.create(fontFamilyName, textStyleValue);
+
+    Typeface font;
+    int textWeightValue;
+    if (isFontWeightEnabled(context)
+        && PartnerConfigHelper.get(context).isPartnerConfigAvailable(buttonTextWeightConfig)) {
+      textWeightValue =
+          PartnerConfigHelper.get(context)
+              .getInteger(context, buttonTextWeightConfig, FONT_WEIGHT_NORMAL);
+      Typeface fontFamily = Typeface.create(fontFamilyName, textStyleValue);
+      font = Typeface.create(fontFamily, textWeightValue, /* italic= */ false);
+    } else {
+      font = Typeface.create(fontFamilyName, textStyleValue);
+    }
     if (font != null) {
       button.setTypeface(font);
     }
@@ -389,7 +413,7 @@ public class FooterButtonStyleUtils {
     }
 
     if (icon != null) {
-      // TODO: restrict the icons to a reasonable size
+      // TODO: b/120488979 - restrict the icons to a reasonable size
       int h = icon.getIntrinsicHeight();
       int w = icon.getIntrinsicWidth();
       icon.setBounds(0, 0, w, h);
@@ -429,6 +453,7 @@ public class FooterButtonStyleUtils {
   }
 
   /** Gets {@code GradientDrawable} from given {@code button}. */
+  @Nullable
   public static GradientDrawable getGradientDrawable(Button button) {
     // RippleDrawable is available after sdk 21, InsetDrawable#getDrawable is available after
     // sdk 19. So check the sdk is higher than sdk 21 and since Stencil customization provider only
@@ -449,6 +474,7 @@ public class FooterButtonStyleUtils {
     return null;
   }
 
+  @Nullable
   static RippleDrawable getRippleDrawable(Button button) {
     // RippleDrawable is available after sdk 21. And because on lower sdk the RippleDrawable is
     // unavailable. Since Stencil customization provider only works on Q+, there is no need to
