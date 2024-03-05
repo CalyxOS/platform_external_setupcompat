@@ -16,10 +16,8 @@
 
 package com.google.android.setupcompat;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.res.TypedArray;
 import android.os.Build;
 import android.os.Build.VERSION;
@@ -101,7 +99,6 @@ public class PartnerCustomizationLayout extends TemplateLayout {
   }
 
   @CanIgnoreReturnValue
-  @TargetApi(VERSION_CODES.HONEYCOMB)
   public PartnerCustomizationLayout(Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
     init(attrs, defStyleAttr);
@@ -219,8 +216,7 @@ public class PartnerCustomizationLayout extends TemplateLayout {
   protected void onAttachedToWindow() {
     super.onAttachedToWindow();
     LifecycleFragment.attachNow(activity);
-    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR2
-        && WizardManagerHelper.isAnySetupWizard(activity.getIntent())) {
+    if (WizardManagerHelper.isAnySetupWizard(activity.getIntent())) {
       getViewTreeObserver().addOnWindowFocusChangeListener(windowFocusChangeListener);
     }
     getMixin(FooterBarMixin.class).onAttachedToWindow();
@@ -258,10 +254,7 @@ public class PartnerCustomizationLayout extends TemplateLayout {
           getContext(),
           CustomEvent.create(MetricKey.get("SetupCompatMetrics", activity), persistableBundle));
     }
-
-    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR2) {
-      getViewTreeObserver().removeOnWindowFocusChangeListener(windowFocusChangeListener);
-    }
+    getViewTreeObserver().removeOnWindowFocusChangeListener(windowFocusChangeListener);
   }
 
   /**
@@ -279,13 +272,7 @@ public class PartnerCustomizationLayout extends TemplateLayout {
   }
 
   public static Activity lookupActivityFromContext(Context context) {
-    if (context instanceof Activity) {
-      return (Activity) context;
-    } else if (context instanceof ContextWrapper) {
-      return lookupActivityFromContext(((ContextWrapper) context).getBaseContext());
-    } else {
-      throw new IllegalArgumentException("Cannot find instance of Activity in parent tree");
-    }
+    return PartnerConfigHelper.lookupActivityFromContext(context);
   }
 
   /**

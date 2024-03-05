@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,40 +14,35 @@
  * limitations under the License.
  */
 
-package com.google.android.setupcompat.portal;
+package com.google.android.setupcompat.portal.v1_1;
 
 import android.content.Intent;
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
-import androidx.annotation.StringRes;
 import com.google.android.setupcompat.internal.Preconditions;
 
 /**
  * A class that represents how a persistent notification is to be presented to the user using the
  * {@link com.google.android.setupcompat.portal.ISetupNotificationServicePortalExtension }.
- *
- * @deprecated use {@link com.google.android.setupcompat.portal.v1_1.TaskComponent}.
  */
-@Deprecated
 public class TaskComponent implements Parcelable {
   private final String packageName;
   private final String taskName;
-  @StringRes private final int displayNameResId;
-  @DrawableRes private final int displayIconResId;
+  private final String displayNameResName;
+  private final String displayIconResName;
   private final Intent itemClickIntent;
 
   private TaskComponent(
       String packageName,
       String taskName,
-      @StringRes int displayNameResId,
-      @DrawableRes int displayIconResId,
+      String displayNameResName,
+      String displayIconResName,
       Intent itemClickIntent) {
     this.packageName = packageName;
     this.taskName = taskName;
-    this.displayNameResId = displayNameResId;
-    this.displayIconResId = displayIconResId;
+    this.displayNameResName = displayNameResName;
+    this.displayIconResName = displayIconResName;
     this.itemClickIntent = itemClickIntent;
   }
 
@@ -68,16 +63,16 @@ public class TaskComponent implements Parcelable {
     return taskName;
   }
 
-  /** Returns the string resource id of display name. */
-  @StringRes
-  public int getDisplayName() {
-    return displayNameResId;
+  /** Returns the string resource name of display name. */
+  @NonNull
+  public String getDisplayName() {
+    return displayNameResName;
   }
 
-  /** Returns the drawable resource id of display icon. */
-  @DrawableRes
-  public int getDisplayIcon() {
-    return displayIconResId;
+  /** Returns the drawable resource name of display icon. */
+  @NonNull
+  public String getDisplayIcon() {
+    return displayIconResName;
   }
 
   /** Returns the Intent to start the user interface while progress item click. */
@@ -89,8 +84,8 @@ public class TaskComponent implements Parcelable {
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(getPackageName());
     dest.writeString(getTaskName());
-    dest.writeInt(getDisplayName());
-    dest.writeInt(getDisplayIcon());
+    dest.writeString(getDisplayName());
+    dest.writeString(getDisplayIcon());
     dest.writeParcelable(getItemClickIntent(), 0);
   }
 
@@ -106,8 +101,8 @@ public class TaskComponent implements Parcelable {
           return TaskComponent.newBuilder()
               .setPackageName(in.readString())
               .setTaskName(in.readString())
-              .setDisplayName(in.readInt())
-              .setDisplayIcon(in.readInt())
+              .setDisplayName(in.readString())
+              .setDisplayIcon(in.readString())
               .setItemClickIntent(in.readParcelable(Intent.class.getClassLoader()))
               .build();
         }
@@ -122,8 +117,8 @@ public class TaskComponent implements Parcelable {
   public static class Builder {
     private String packageName;
     private String taskName;
-    @StringRes private int displayNameResId;
-    @DrawableRes private int displayIconResId;
+    private String displayNameResName;
+    private String displayIconResName;
     private Intent itemClickIntent;
 
     /** Sets the packages name which is the service exists */
@@ -139,14 +134,14 @@ public class TaskComponent implements Parcelable {
     }
 
     /** Sets the name which is displayed on PortalActivity */
-    public Builder setDisplayName(@StringRes int displayNameResId) {
-      this.displayNameResId = displayNameResId;
+    public Builder setDisplayName(String displayNameResName) {
+      this.displayNameResName = displayNameResName;
       return this;
     }
 
     /** Sets the icon which is display on PortalActivity */
-    public Builder setDisplayIcon(@DrawableRes int displayIconResId) {
-      this.displayIconResId = displayIconResId;
+    public Builder setDisplayIcon(String displayIconResName) {
+      this.displayIconResName = displayIconResName;
       return this;
     }
 
@@ -159,11 +154,11 @@ public class TaskComponent implements Parcelable {
       Preconditions.checkNotNull(packageName, "packageName cannot be null.");
       Preconditions.checkNotNull(taskName, "serviceClass cannot be null.");
       Preconditions.checkNotNull(itemClickIntent, "Item click intent cannot be null");
-      Preconditions.checkArgument(displayNameResId != 0, "Invalidate resource id of display name");
-      Preconditions.checkArgument(displayIconResId != 0, "Invalidate resource id of display icon");
+      Preconditions.checkNotNull(displayNameResName, "Display name cannot be null");
+      Preconditions.checkNotNull(displayIconResName, "Display icon cannot be null");
 
       return new TaskComponent(
-          packageName, taskName, displayNameResId, displayIconResId, itemClickIntent);
+          packageName, taskName, displayNameResName, displayIconResName, itemClickIntent);
     }
   }
 }

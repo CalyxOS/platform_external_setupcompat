@@ -70,7 +70,8 @@ public class ButtonBarLayout extends LinearLayout {
 
     super.onMeasure(initialWidthMeasureSpec, heightMeasureSpec);
 
-    if (!isFooterButtonsEventlyWeighted(getContext()) && (getMeasuredWidth() > widthSize)) {
+    final boolean childrenLargerThanContainer = (widthSize > 0) && (getMeasuredWidth() > widthSize);
+    if (!isFooterButtonsEvenlyWeighted(getContext()) && childrenLargerThanContainer) {
       setStacked(true);
 
       // Measure again in the new orientation.
@@ -193,18 +194,18 @@ public class ButtonBarLayout extends LinearLayout {
     return childFooterButtons;
   }
 
-  private boolean isFooterButtonsEventlyWeighted(Context context) {
+  private boolean isFooterButtonsEvenlyWeighted(Context context) {
     int childCount = getChildCount();
-    int primayButtonCount = 0;
+    int primaryButtonCount = 0;
     for (int i = 0; i < childCount; i++) {
       View child = getChildAt(i);
       if (child instanceof FooterActionButton) {
         if (((FooterActionButton) child).isPrimaryButtonStyle()) {
-          primayButtonCount += 1;
+          primaryButtonCount += 1;
         }
       }
     }
-    if (primayButtonCount != 2) {
+    if (primaryButtonCount != 2) {
       return false;
     }
 

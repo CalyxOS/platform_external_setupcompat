@@ -18,9 +18,19 @@ package com.google.android.setupcompat.portal;
 
 /** Constant values used for PortalExtension */
 public class PortalExtensionConstants {
+  /**
+   * Intent action to bind Portal Service.
+   * @deprecated, use {@code BIND_SERVICE_V_1_1_INTENT_ACTION}.
+   * */
+  @Deprecated
   public static final String BIND_SERVICE_INTENT_ACTION =
       "com.google.android.setupcompat.portal.SetupNotificationService.BIND_EXTENSION";
 
+  /**
+   * Intent action to bind Portal Service.
+   */
+  public static final String BIND_SERVICE_V_1_1_INTENT_ACTION =
+      "com.google.android.setupcompat.portal.SetupNotificationService.BIND_EXTENSION_V_1_1";
+
   private PortalExtensionConstants() {}
-  ;
 }

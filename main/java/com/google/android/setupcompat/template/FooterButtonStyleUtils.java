@@ -426,11 +426,7 @@ public class FooterButtonStyleUtils {
     } else {
       iconStart = icon;
     }
-    if (Build.VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
-      button.setCompoundDrawablesRelative(iconStart, null, iconEnd, null);
-    } else {
-      button.setCompoundDrawables(iconStart, null, iconEnd, null);
-    }
+    button.setCompoundDrawablesRelative(iconStart, null, iconEnd, null);
   }
 
   static void updateButtonBackground(Button button, @ColorInt int color) {

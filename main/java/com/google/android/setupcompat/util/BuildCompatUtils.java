@@ -84,7 +84,7 @@ public final class BuildCompatUtils {
    */
   public static boolean isAtLeastU() {
     return (Build.VERSION.CODENAME.equals("REL") && Build.VERSION.SDK_INT >= 34)
-      || isAtLeastPreReleaseCodename("UpsideDownCake");
+        || isAtLeastPreReleaseCodename("UpsideDownCake");
   }
 
   private static boolean isAtLeastPreReleaseCodename(String codename) {

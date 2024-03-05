@@ -96,9 +96,10 @@ android_library {
     ],
     static_libs: [
         "androidx.annotation_annotation",
+        "androidx.window_window",
         "error_prone_annotations",
     ],
-    min_sdk_version: "14",
+    min_sdk_version: "19",
     sdk_version: "current",
     optimize: {
         proguard_flags_files: ["proguard.flags"],
@@ -120,9 +121,10 @@ android_library {
     ],
     static_libs: [
         "androidx.annotation_annotation",
+        "androidx.window_window",
         "error_prone_annotations",
     ],
-    min_sdk_version: "14",
+    min_sdk_version: "19",
     sdk_version: "current",
     optimize: {
         proguard_flags_files: ["proguard.flags"],

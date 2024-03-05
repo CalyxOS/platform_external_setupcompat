@@ -16,8 +16,12 @@
 
 package com.google.android.setupcompat.partnerconfig;
 
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
@@ -34,12 +38,14 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.window.embedding.ActivityEmbeddingController;
 import com.google.android.setupcompat.partnerconfig.PartnerConfig.ResourceType;
 import com.google.android.setupcompat.util.BuildCompatUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Objects;
 
 /** The helper reads and caches the partner configurations from SUW. */
 public class PartnerConfigHelper {
@@ -68,6 +74,9 @@ public class PartnerConfigHelper {
   public static final String IS_DYNAMIC_COLOR_ENABLED_METHOD = "isDynamicColorEnabled";
 
   @VisibleForTesting
+  public static final String IS_FULL_DYNAMIC_COLOR_ENABLED_METHOD = "isFullDynamicColorEnabled";
+
+  @VisibleForTesting
   public static final String IS_NEUTRAL_BUTTON_STYLE_ENABLED_METHOD = "isNeutralButtonStyleEnabled";
 
   @VisibleForTesting
@@ -93,6 +102,7 @@ public class PartnerConfigHelper {
   @VisibleForTesting public static Bundle applyMaterialYouConfigBundle = null;
 
   @VisibleForTesting public static Bundle applyDynamicColorBundle = null;
+  @VisibleForTesting public static Bundle applyFullDynamicColorBundle = null;
 
   @VisibleForTesting public static Bundle applyNeutralButtonStyleBundle = null;
 
@@ -660,15 +670,40 @@ public class PartnerConfigHelper {
     if (fallbackBundle != null) {
       resourceEntryBundle.putBundle(KEY_FALLBACK_CONFIG, fallbackBundle.getBundle(resourceName));
     }
-    ResourceEntry adjustResourceEntry =
-        adjustResourceEntryDefaultValue(
-            context, ResourceEntry.fromBundle(context, resourceEntryBundle));
-    ;
-    if (BuildCompatUtils.isAtLeastU() && isEmbeddedActivityOnePaneEnabled(context)) {
-      adjustResourceEntry = embeddedActivityResourceEntryDefaultValue(context, adjustResourceEntry);
+
+    ResourceEntry resourceEntry = ResourceEntry.fromBundle(context, resourceEntryBundle);
+
+    if (BuildCompatUtils.isAtLeastU() && isActivityEmbedded(context)) {
+      resourceEntry = adjustEmbeddedActivityResourceEntryDefaultValue(context, resourceEntry);
+    } else if (BuildCompatUtils.isAtLeastT() && shouldApplyMaterialYouStyle(context)) {
+      resourceEntry = adjustMaterialYouResourceEntryDefaultValue(context, resourceEntry);
     }
 
-    return adjustResourceEntryDayNightMode(context, adjustResourceEntry);
+    return adjustResourceEntryDayNightMode(context, resourceEntry);
+  }
+
+  @VisibleForTesting
+  boolean isActivityEmbedded(Context context) {
+    Activity activity;
+    try {
+      activity = lookupActivityFromContext(context);
+    } catch (IllegalArgumentException e) {
+      Log.w(TAG, "Not a Activity instance in parent tree");
+      return false;
+    }
+
+    return isEmbeddedActivityOnePaneEnabled(context)
+        && ActivityEmbeddingController.getInstance(activity).isActivityEmbedded(activity);
+  }
+
+  public static Activity lookupActivityFromContext(Context context) {
+    if (context instanceof Activity) {
+      return (Activity) context;
+    } else if (context instanceof ContextWrapper) {
+      return lookupActivityFromContext(((ContextWrapper) context).getBaseContext());
+    } else {
+      throw new IllegalArgumentException("Cannot find instance of Activity in parent tree");
+    }
   }
 
   /**
@@ -696,72 +731,82 @@ public class PartnerConfigHelper {
   // Check the MNStyle flag and replace the inputResourceEntry.resourceName &
   // inputResourceEntry.resourceId after T, that means if using Gliv4 before S, will always use
   // glifv3 resources.
-  ResourceEntry adjustResourceEntryDefaultValue(Context context, ResourceEntry inputResourceEntry) {
-    if (BuildCompatUtils.isAtLeastT() && shouldApplyMaterialYouStyle(context)) {
-      // If not overlay resource
-      try {
-        if (SUW_PACKAGE_NAME.equals(inputResourceEntry.getPackageName())) {
-          String resourceTypeName =
-              inputResourceEntry
-                  .getResources()
-                  .getResourceTypeName(inputResourceEntry.getResourceId());
-          // try to update resourceName & resourceId
-          String materialYouResourceName =
-              inputResourceEntry.getResourceName().concat(MATERIAL_YOU_RESOURCE_SUFFIX);
-          int materialYouResourceId =
-              inputResourceEntry
-                  .getResources()
-                  .getIdentifier(
-                      materialYouResourceName,
-                      resourceTypeName,
-                      inputResourceEntry.getPackageName());
-          if (materialYouResourceId != 0) {
-            Log.i(TAG, "use material you resource:" + materialYouResourceName);
-            return new ResourceEntry(
-                inputResourceEntry.getPackageName(),
-                materialYouResourceName,
-                materialYouResourceId,
-                inputResourceEntry.getResources());
-          }
-        }
-      } catch (NotFoundException ex) {
-        // fall through
-      }
-    }
-    return inputResourceEntry;
-  }
-
-  // Check the embedded activity flag and replace the inputResourceEntry.resourceName &
-  // inputResourceEntry.resourceId after U.
-  ResourceEntry embeddedActivityResourceEntryDefaultValue(
+  ResourceEntry adjustMaterialYouResourceEntryDefaultValue(
       Context context, ResourceEntry inputResourceEntry) {
     // If not overlay resource
     try {
-      if (SUW_PACKAGE_NAME.equals(inputResourceEntry.getPackageName())) {
+      if (Objects.equals(inputResourceEntry.getPackageName(), SUW_PACKAGE_NAME)) {
         String resourceTypeName =
             inputResourceEntry
                 .getResources()
                 .getResourceTypeName(inputResourceEntry.getResourceId());
         // try to update resourceName & resourceId
-        String embeddedActivityResourceName =
-            inputResourceEntry.getResourceName().concat(EMBEDDED_ACTIVITY_RESOURCE_SUFFIX);
-        int embeddedActivityResourceId =
+        String materialYouResourceName =
+            inputResourceEntry.getResourceName().concat(MATERIAL_YOU_RESOURCE_SUFFIX);
+        int materialYouResourceId =
             inputResourceEntry
                 .getResources()
                 .getIdentifier(
-                    embeddedActivityResourceName,
-                    resourceTypeName,
-                    inputResourceEntry.getPackageName());
-        if (embeddedActivityResourceId != 0) {
-          Log.i(TAG, "use embedded activity resource:" + embeddedActivityResourceName);
+                    materialYouResourceName, resourceTypeName, inputResourceEntry.getPackageName());
+        if (materialYouResourceId != 0) {
+          Log.i(TAG, "use material you resource:" + materialYouResourceName);
           return new ResourceEntry(
               inputResourceEntry.getPackageName(),
-              embeddedActivityResourceName,
-              embeddedActivityResourceId,
+              materialYouResourceName,
+              materialYouResourceId,
               inputResourceEntry.getResources());
         }
       }
     } catch (NotFoundException ex) {
+      // fall through
+    }
+    return inputResourceEntry;
+  }
+
+  // Check the embedded activity flag and replace the inputResourceEntry.resourceName &
+  // inputResourceEntry.resourceId, and try to find the embedded resource from the different
+  // package.
+  ResourceEntry adjustEmbeddedActivityResourceEntryDefaultValue(
+      Context context, ResourceEntry inputResourceEntry) {
+    // If not overlay resource
+    try {
+      String resourceTypeName =
+          inputResourceEntry.getResources().getResourceTypeName(inputResourceEntry.getResourceId());
+      // For the first time to get embedded activity resource id, it may get from setup wizard
+      // package or Overlay package.
+      String embeddedActivityResourceName =
+          inputResourceEntry.getResourceName().concat(EMBEDDED_ACTIVITY_RESOURCE_SUFFIX);
+      int embeddedActivityResourceId =
+          inputResourceEntry
+              .getResources()
+              .getIdentifier(
+                  embeddedActivityResourceName,
+                  resourceTypeName,
+                  inputResourceEntry.getPackageName());
+      if (embeddedActivityResourceId != 0) {
+        Log.i(TAG, "use embedded activity resource:" + embeddedActivityResourceName);
+        return new ResourceEntry(
+            inputResourceEntry.getPackageName(),
+            embeddedActivityResourceName,
+            embeddedActivityResourceId,
+            inputResourceEntry.getResources());
+      } else {
+        // If resource id is not available from the Overlay package, try to get it from setup wizard
+        // package.
+        PackageManager manager = context.getPackageManager();
+        Resources resources = manager.getResourcesForApplication(SUW_PACKAGE_NAME);
+        embeddedActivityResourceId =
+            resources.getIdentifier(
+                embeddedActivityResourceName, resourceTypeName, SUW_PACKAGE_NAME);
+        if (embeddedActivityResourceId != 0) {
+          return new ResourceEntry(
+              SUW_PACKAGE_NAME,
+              embeddedActivityResourceName,
+              embeddedActivityResourceId,
+              resources);
+        }
+      }
+    } catch (NotFoundException | NameNotFoundException ex) {
       // fall through
     }
     return inputResourceEntry;
@@ -774,6 +819,7 @@ public class PartnerConfigHelper {
     applyExtendedPartnerConfigBundle = null;
     applyMaterialYouConfigBundle = null;
     applyDynamicColorBundle = null;
+    applyFullDynamicColorBundle = null;
     applyNeutralButtonStyleBundle = null;
     applyEmbeddedActivityOnePaneBundle = null;
     suwDefaultThemeBundle = null;
@@ -914,6 +960,29 @@ public class PartnerConfigHelper {
 
     return (applyDynamicColorBundle != null
         && applyDynamicColorBundle.getBoolean(IS_DYNAMIC_COLOR_ENABLED_METHOD, false));
+  }
+
+  /** Returns {@code true} if the SetupWizard supports the full dynamic color during setup flow. */
+  public static boolean isSetupWizardFullDynamicColorEnabled(@NonNull Context context) {
+    if (applyFullDynamicColorBundle == null) {
+      try {
+        applyFullDynamicColorBundle =
+            context
+                .getContentResolver()
+                .call(
+                    getContentUri(),
+                    IS_FULL_DYNAMIC_COLOR_ENABLED_METHOD,
+                    /* arg= */ null,
+                    /* extras= */ null);
+      } catch (IllegalArgumentException | SecurityException exception) {
+        Log.w(TAG, "SetupWizard full dynamic color supporting status unknown; return as false.");
+        applyFullDynamicColorBundle = null;
+        return false;
+      }
+    }
+
+    return (applyFullDynamicColorBundle != null
+        && applyFullDynamicColorBundle.getBoolean(IS_FULL_DYNAMIC_COLOR_ENABLED_METHOD, false));
   }
 
   /** Returns true if the SetupWizard supports the one-pane embedded activity during setup flow. */

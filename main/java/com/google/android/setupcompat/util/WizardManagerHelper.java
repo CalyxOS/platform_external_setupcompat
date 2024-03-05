@@ -20,8 +20,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Build.VERSION;
-import android.os.Build.VERSION_CODES;
 import android.provider.Settings;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -151,17 +149,9 @@ public final class WizardManagerHelper {
    * @see #isDeviceProvisioned(Context)
    */
   public static boolean isUserSetupComplete(Context context) {
-    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
-      return Settings.Secure.getInt(
-              context.getContentResolver(), SETTINGS_SECURE_USER_SETUP_COMPLETE, 0)
-          == 1;
-    } else {
-      // For versions below JB MR1, there are no user profiles. Just return the global device
-      // provisioned state.
-      return Settings.Secure.getInt(
-              context.getContentResolver(), SETTINGS_GLOBAL_DEVICE_PROVISIONED, 0)
-          == 1;
-    }
+    return Settings.Secure.getInt(
+            context.getContentResolver(), SETTINGS_SECURE_USER_SETUP_COMPLETE, 0)
+        == 1;
   }
 
   /**
@@ -174,15 +164,9 @@ public final class WizardManagerHelper {
    * @see #isUserSetupComplete(Context)
    */
   public static boolean isDeviceProvisioned(Context context) {
-    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
-      return Settings.Global.getInt(
-              context.getContentResolver(), SETTINGS_GLOBAL_DEVICE_PROVISIONED, 0)
-          == 1;
-    } else {
-      return Settings.Secure.getInt(
-              context.getContentResolver(), SETTINGS_GLOBAL_DEVICE_PROVISIONED, 0)
-          == 1;
-    }
+    return Settings.Global.getInt(
+            context.getContentResolver(), SETTINGS_GLOBAL_DEVICE_PROVISIONED, 0)
+        == 1;
   }
 
   /**

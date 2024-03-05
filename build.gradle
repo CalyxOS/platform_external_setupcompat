@@ -19,7 +19,7 @@ android {
     // Not specifying compileSdkVersion here so clients can specify it; must be at least Q
 
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion 19
         targetSdkVersion 28
     }
 

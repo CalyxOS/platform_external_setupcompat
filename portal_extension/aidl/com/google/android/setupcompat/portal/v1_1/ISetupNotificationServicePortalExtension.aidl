@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.android.setupcompat.portal;
+package com.google.android.setupcompat.portal.v1_1;
+
+import com.google.android.setupcompat.portal.v1_1.IPortalProgressCallback;
+import com.google.android.setupcompat.portal.v1_1.TaskComponent;
 
 /**
- * A class that represents how a persistent notification is to be presented to the user using the
- * {@link com.google.android.setupcompat.portal.ISetupNotificationServicePortalExtension }.
- * @Deprecated, use {@link com.google.android.setupcompat.portal.v1_1.TaskkComponent}.
+ * Declares the interface for portal used by GmsCore.
  */
-parcelable TaskComponent;
+interface ISetupNotificationServicePortalExtension {
+  IPortalProgressCallback registerTask(in TaskComponent component) = 1;
+
+  boolean removeTask(String packageName, String taskName) = 2;
+}

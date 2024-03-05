@@ -21,6 +21,7 @@ import com.google.android.setupcompat.portal.TaskComponent;
 
 /**
  * Declares the interface for portal used by GmsCore.
+ * @deprecated, use {@link com.google.android.setupcompat.portal.v1_1.ISetupNotificationServicePortalExtension}.
  */
 interface ISetupNotificationServicePortalExtension {
   IPortalProgressCallback registerTask(in TaskComponent component) = 1;
