@@ -36,6 +36,8 @@ import com.google.android.setupcompat.internal.PersistableBundles;
 import com.google.android.setupcompat.internal.SetupCompatServiceInvoker;
 import com.google.android.setupcompat.internal.TemplateLayout;
 import com.google.android.setupcompat.logging.CustomEvent;
+import com.google.android.setupcompat.logging.LoggingObserver;
+import com.google.android.setupcompat.logging.LoggingObserver.SetupCompatUiEvent.LayoutInflatedEvent;
 import com.google.android.setupcompat.logging.MetricKey;
 import com.google.android.setupcompat.logging.SetupMetricsLogger;
 import com.google.android.setupcompat.partnerconfig.PartnerConfigHelper;
@@ -258,8 +260,8 @@ public class PartnerCustomizationLayout extends TemplateLayout {
   }
 
   /**
-   * PartnerCustomizationLayout is a template layout for different type of GlifLayout.
-   * This method allows each type of layout to report its "GlifLayoutType".
+   * PartnerCustomizationLayout is a template layout for different type of GlifLayout. This method
+   * allows each type of layout to report its "GlifLayoutType".
    */
   public void setLayoutTypeMetrics(PersistableBundle bundle) {
     this.layoutTypeBundle = bundle;
@@ -329,6 +331,18 @@ public class PartnerCustomizationLayout extends TemplateLayout {
   }
 
   /**
+   * Sets a logging observer for {@link FooterBarMixin}. The logging observer is used to log
+   * impressions and clicks on the layout and footer bar buttons.
+   *
+   * @throws UnsupportedOperationException if the primary or secondary button has been set before
+   *     the logging observer is set
+   */
+  public void setLoggingObserver(LoggingObserver loggingObserver) {
+    getMixin(FooterBarMixin.class).setLoggingObserver(loggingObserver);
+    loggingObserver.log(new LayoutInflatedEvent(this));
+  }
+
+  /**
    * Invoke the method onFocusStatusChanged when onWindowFocusChangeListener receive onFocusChanged.
    */
   private void onFocusChanged(boolean hasFocus) {
@@ -339,4 +353,3 @@ public class PartnerCustomizationLayout extends TemplateLayout {
                 activity, PartnerCustomizationLayout.this, hasFocus));
   }
 }
-

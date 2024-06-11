@@ -82,6 +82,7 @@ import java.lang.annotation.RetentionPolicy;
   PartnerConfigKey.KEY_ICON_MARGIN_TOP,
   PartnerConfigKey.KEY_ICON_SIZE,
   PartnerConfigKey.KEY_ILLUSTRATION_MAX_WIDTH,
+  PartnerConfigKey.KEY_ILLUSTRATION_MAX_HEIGHT,
   PartnerConfigKey.KEY_DESCRIPTION_TEXT_SIZE,
   PartnerConfigKey.KEY_DESCRIPTION_TEXT_COLOR,
   PartnerConfigKey.KEY_DESCRIPTION_LINK_TEXT_COLOR,
@@ -149,6 +150,7 @@ import java.lang.annotation.RetentionPolicy;
   PartnerConfigKey.KEY_LOADING_LAYOUT_WAIT_FOR_ANIMATION_FINISHED,
   PartnerConfigKey.KEY_PROGRESS_BAR_MARGIN_TOP,
   PartnerConfigKey.KEY_PROGRESS_BAR_MARGIN_BOTTOM,
+  PartnerConfigKey.KEY_TWO_PANE_ADAPT_WINDOW_WIDTH,
 })
 // TODO: can be removed and always reference PartnerConfig.getResourceName()?
 @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
@@ -308,7 +310,11 @@ public @interface PartnerConfigKey {
   // Size of the icon
   String KEY_ICON_SIZE = "setup_design_icon_size";
 
+  // The max width for illustration
   String KEY_ILLUSTRATION_MAX_WIDTH = "setup_design_illustration_max_width";
+
+  // The max height for illustration
+  String KEY_ILLUSTRATION_MAX_HEIGHT = "setup_design_illustration_max_height";
 
   // Background color of the header area
   String KEY_HEADER_AREA_BACKGROUND_COLOR = "setup_design_header_area_background_color";
@@ -561,4 +567,7 @@ public @interface PartnerConfigKey {
 
   // A margin bottom of the content frame of progress bar.
   String KEY_PROGRESS_BAR_MARGIN_BOTTOM = "setup_design_progress_bar_margin_bottom";
+
+  // A adapt window width to determine how large to show two panel.
+  String KEY_TWO_PANE_ADAPT_WINDOW_WIDTH = "setup_compat_two_pane_adapt_window_width";
 }

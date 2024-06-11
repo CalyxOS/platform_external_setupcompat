@@ -51,6 +51,8 @@ import com.google.android.setupcompat.PartnerCustomizationLayout;
 import com.google.android.setupcompat.R;
 import com.google.android.setupcompat.internal.FooterButtonPartnerConfig;
 import com.google.android.setupcompat.internal.TemplateLayout;
+import com.google.android.setupcompat.logging.LoggingObserver;
+import com.google.android.setupcompat.logging.LoggingObserver.SetupCompatUiEvent.ButtonInflatedEvent;
 import com.google.android.setupcompat.logging.internal.FooterBarMixinMetrics;
 import com.google.android.setupcompat.partnerconfig.PartnerConfig;
 import com.google.android.setupcompat.partnerconfig.PartnerConfigHelper;
@@ -76,6 +78,7 @@ public class FooterBarMixin implements Mixin {
   @VisibleForTesting public LinearLayout buttonContainer;
   private FooterButton primaryButton;
   private FooterButton secondaryButton;
+  private LoggingObserver loggingObserver;
   @IdRes private int primaryButtonId;
   @IdRes private int secondaryButtonId;
   @VisibleForTesting public FooterButtonPartnerConfig primaryButtonPartnerConfigForTesting;
@@ -222,7 +225,25 @@ public class FooterBarMixin implements Mixin {
       metrics.logSecondaryButtonInitialStateVisibility(
           /* isVisible= */ true, /* isUsingXml= */ true);
     }
+  }
 
+  public void setLoggingObserver(LoggingObserver observer) {
+    loggingObserver = observer;
+
+    // If primary button is already created, it's likely that {@code setPrimaryButton()} was called
+    // before an {@link LoggingObserver} is set, we need to set an observer and call the right
+    // logging method here.
+    if (primaryButtonId != 0) {
+      loggingObserver.log(
+          new ButtonInflatedEvent(getPrimaryButtonView(), LoggingObserver.ButtonType.PRIMARY));
+      getPrimaryButton().setLoggingObserver(observer);
+    }
+    // Same for secondary button.
+    if (secondaryButtonId != 0) {
+      loggingObserver.log(
+          new ButtonInflatedEvent(getSecondaryButtonView(), LoggingObserver.ButtonType.SECONDARY));
+      getSecondaryButton().setLoggingObserver(observer);
+    }
   }
 
   protected boolean isFooterButtonAlignedEnd() {
@@ -409,6 +430,11 @@ public class FooterBarMixin implements Mixin {
     primaryButtonPartnerConfigForTesting = footerButtonPartnerConfig;
     onFooterButtonInflated(button, footerBarPrimaryBackgroundColor);
     onFooterButtonApplyPartnerResource(button, footerButtonPartnerConfig);
+    if (loggingObserver != null) {
+      loggingObserver.log(
+          new ButtonInflatedEvent(getPrimaryButtonView(), LoggingObserver.ButtonType.PRIMARY));
+      footerButton.setLoggingObserver(loggingObserver);
+    }
 
     // Make sure the position of buttons are correctly and prevent primary button create twice or
     // more.
@@ -439,7 +465,7 @@ public class FooterBarMixin implements Mixin {
   /** Sets secondary button for footer. */
   @MainThread
   public void setSecondaryButton(FooterButton footerButton) {
-    setSecondaryButton(footerButton, /*usePrimaryStyle= */ false);
+    setSecondaryButton(footerButton, /* usePrimaryStyle= */ false);
   }
 
   /** Sets secondary button for footer. Allow to use the primary button style. */
@@ -495,6 +521,10 @@ public class FooterBarMixin implements Mixin {
 
     onFooterButtonInflated(button, footerBarSecondaryBackgroundColor);
     onFooterButtonApplyPartnerResource(button, footerButtonPartnerConfig);
+    if (loggingObserver != null) {
+      loggingObserver.log(new ButtonInflatedEvent(button, LoggingObserver.ButtonType.SECONDARY));
+      footerButton.setLoggingObserver(loggingObserver);
+    }
 
     // Make sure the position of buttons are correctly and prevent secondary button create twice or
     // more.

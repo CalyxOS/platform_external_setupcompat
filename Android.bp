@@ -49,6 +49,7 @@ filegroup {
         "main/java/com/google/android/setupcompat/*.java",
         "main/java/com/google/android/setupcompat/internal/*.java",
         "main/java/com/google/android/setupcompat/logging/*.java",
+        "main/java/com/google/android/setupcompat/logging/*.kt",
         "main/java/com/google/android/setupcompat/logging/internal/*.java",
         "main/java/com/google/android/setupcompat/template/*.java",
         "main/java/com/google/android/setupcompat/util/*.java",
@@ -103,7 +104,10 @@ android_library {
     sdk_version: "current",
     optimize: {
         proguard_flags_files: ["proguard.flags"],
-    }
+    },
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_library {
@@ -128,5 +132,8 @@ android_library {
     sdk_version: "current",
     optimize: {
         proguard_flags_files: ["proguard.flags"],
-    }
+    },
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

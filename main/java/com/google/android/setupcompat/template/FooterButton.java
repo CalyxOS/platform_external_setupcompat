@@ -33,6 +33,9 @@ import androidx.annotation.StringRes;
 import androidx.annotation.StyleRes;
 import com.google.android.setupcompat.R;
 import com.google.android.setupcompat.logging.CustomEvent;
+import com.google.android.setupcompat.logging.LoggingObserver;
+import com.google.android.setupcompat.logging.LoggingObserver.InteractionType;
+import com.google.android.setupcompat.logging.LoggingObserver.SetupCompatUiEvent.ButtonInteractionEvent;
 import java.lang.annotation.Retention;
 import java.util.Locale;
 
@@ -53,6 +56,7 @@ public final class FooterButton implements OnClickListener {
   private OnClickListener onClickListener;
   private OnClickListener onClickListenerWhenDisabled;
   private OnButtonEventListener buttonListener;
+  private LoggingObserver loggingObserver;
   private int clickCount = 0;
   private Locale locale;
   private int direction;
@@ -223,7 +227,14 @@ public final class FooterButton implements OnClickListener {
     if (onClickListener != null) {
       clickCount++;
       onClickListener.onClick(v);
+      if (loggingObserver != null) {
+        loggingObserver.log(new ButtonInteractionEvent(v, InteractionType.TAP));
+      }
     }
+  }
+
+  void setLoggingObserver(LoggingObserver loggingObserver) {
+    this.loggingObserver = loggingObserver;
   }
 
   /** Interface definition for a callback to be invoked when footer button API has set. */
@@ -263,23 +274,31 @@ public final class FooterButton implements OnClickListener {
   public @interface ButtonType {
     /** A type of button that doesn't fit into any other categories. */
     int OTHER = 0;
+
     /**
      * A type of button that will set up additional elements of the ongoing setup step(s) when
      * clicked.
      */
     int ADD_ANOTHER = 1;
+
     /** A type of button that will cancel the ongoing setup step(s) and exit setup when clicked. */
     int CANCEL = 2;
+
     /** A type of button that will clear the progress when clicked. (eg: clear PIN code) */
     int CLEAR = 3;
+
     /** A type of button that will exit the setup flow when clicked. */
     int DONE = 4;
+
     /** A type of button that will go to the next screen, or next step in the flow when clicked. */
     int NEXT = 5;
+
     /** A type of button to opt-in or agree to the features described in the current screen. */
     int OPT_IN = 6;
+
     /** A type of button that will skip the current step when clicked. */
     int SKIP = 7;
+
     /** A type of button that will stop the ongoing setup step(s) and skip forward when clicked. */
     int STOP = 8;
   }

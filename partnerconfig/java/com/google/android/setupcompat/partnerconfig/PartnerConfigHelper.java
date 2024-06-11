@@ -87,6 +87,9 @@ public class PartnerConfigHelper {
       "isEmbeddedActivityOnePaneEnabled";
 
   @VisibleForTesting
+  public static final String IS_FORCE_TWO_PANE_ENABLED_METHOD = "isForceTwoPaneEnabled";
+
+  @VisibleForTesting
   public static final String GET_SUW_DEFAULT_THEME_STRING_METHOD = "suwDefaultThemeString";
 
   @VisibleForTesting public static final String SUW_PACKAGE_NAME = "com.google.android.setupwizard";
@@ -129,6 +132,10 @@ public class PartnerConfigHelper {
 
   @VisibleForTesting static Bundle applyTransitionBundle = null;
 
+  @SuppressWarnings("NonFinalStaticField")
+  @VisibleForTesting
+  public static Bundle applyForceTwoPaneBundle = null;
+
   @VisibleForTesting public static int savedOrientation = Configuration.ORIENTATION_PORTRAIT;
 
   /** The method name to get if transition settings is set from client. */
@@ -142,6 +149,9 @@ public class PartnerConfigHelper {
   @VisibleForTesting public static int savedScreenHeight = Configuration.SCREEN_HEIGHT_DP_UNDEFINED;
 
   @VisibleForTesting public static int savedScreenWidth = Configuration.SCREEN_WIDTH_DP_UNDEFINED;
+
+  /** A string to be a suffix of resource name which is associating to force two pane feature. */
+  @VisibleForTesting static final String FORCE_TWO_PANE_SUFFIX = "_two_pane";
 
   public static synchronized PartnerConfigHelper get(@NonNull Context context) {
     if (!isValidInstance(context)) {
@@ -675,6 +685,8 @@ public class PartnerConfigHelper {
 
     if (BuildCompatUtils.isAtLeastU() && isActivityEmbedded(context)) {
       resourceEntry = adjustEmbeddedActivityResourceEntryDefaultValue(context, resourceEntry);
+    } else if (BuildCompatUtils.isAtLeastU() && isForceTwoPaneEnabled(context)) {
+      resourceEntry = adjustForceTwoPaneResourceEntryDefaultValue(context, resourceEntry);
     } else if (BuildCompatUtils.isAtLeastT() && shouldApplyMaterialYouStyle(context)) {
       resourceEntry = adjustMaterialYouResourceEntryDefaultValue(context, resourceEntry);
     }
@@ -812,6 +824,49 @@ public class PartnerConfigHelper {
     return inputResourceEntry;
   }
 
+  // Retrieve {@code resourceEntry} with _two_pane suffix resource from the partner resource,
+  // otherwise fallback to origin partner resource if two pane resource not available.
+  ResourceEntry adjustForceTwoPaneResourceEntryDefaultValue(
+      Context context, ResourceEntry resourceEntry) {
+    if (context == null) {
+      return resourceEntry;
+    }
+
+    try {
+      String resourceTypeName =
+          resourceEntry.getResources().getResourceTypeName(resourceEntry.getResourceId());
+      String forceTwoPaneResourceName =
+          resourceEntry.getResourceName().concat(FORCE_TWO_PANE_SUFFIX);
+      int twoPaneResourceId =
+          resourceEntry
+              .getResources()
+              .getIdentifier(
+                  forceTwoPaneResourceName, resourceTypeName, resourceEntry.getPackageName());
+      if (twoPaneResourceId != Resources.ID_NULL) {
+        Log.i(TAG, "two pane resource=" + forceTwoPaneResourceName);
+        return new ResourceEntry(
+            resourceEntry.getPackageName(),
+            forceTwoPaneResourceName,
+            twoPaneResourceId,
+            resourceEntry.getResources());
+      } else {
+        // If resource id is not available from the Overlay package, try to get it from setup wizard
+        // package.
+        PackageManager packageManager = context.getPackageManager();
+        Resources resources = packageManager.getResourcesForApplication(SUW_PACKAGE_NAME);
+        twoPaneResourceId =
+            resources.getIdentifier(forceTwoPaneResourceName, resourceTypeName, SUW_PACKAGE_NAME);
+        if (twoPaneResourceId != 0) {
+          return new ResourceEntry(
+              SUW_PACKAGE_NAME, forceTwoPaneResourceName, twoPaneResourceId, resources);
+        }
+      }
+    } catch (NameNotFoundException | NotFoundException ignore) {
+      // fall through
+    }
+    return resourceEntry;
+  }
+
   @VisibleForTesting
   public static synchronized void resetInstance() {
     instance = null;
@@ -824,6 +879,7 @@ public class PartnerConfigHelper {
     applyEmbeddedActivityOnePaneBundle = null;
     suwDefaultThemeBundle = null;
     applyTransitionBundle = null;
+    applyForceTwoPaneBundle = null;
   }
 
   /**
@@ -1060,8 +1116,7 @@ public class PartnerConfigHelper {
    * than the client.
    */
   public static boolean isGlifThemeControlledTransitionApplied(@NonNull Context context) {
-    if (applyTransitionBundle == null
-        || applyTransitionBundle.isEmpty()) {
+    if (applyTransitionBundle == null || applyTransitionBundle.isEmpty()) {
       try {
         applyTransitionBundle =
             context
@@ -1076,12 +1131,32 @@ public class PartnerConfigHelper {
                 + " as default value");
       }
     }
-    if (applyTransitionBundle != null
-        && !applyTransitionBundle.isEmpty()) {
-      return applyTransitionBundle.getBoolean(
-          APPLY_GLIF_THEME_CONTROLLED_TRANSITION_METHOD, true);
+    if (applyTransitionBundle != null && !applyTransitionBundle.isEmpty()) {
+      return applyTransitionBundle.getBoolean(APPLY_GLIF_THEME_CONTROLLED_TRANSITION_METHOD, true);
     }
     return true;
+  }
+
+  /** Returns a boolean indicate whether the force two pane feature enable or not. */
+  public static boolean isForceTwoPaneEnabled(@NonNull Context context) {
+    if (applyForceTwoPaneBundle == null || applyForceTwoPaneBundle.isEmpty()) {
+      try {
+        applyForceTwoPaneBundle =
+            context
+                .getContentResolver()
+                .call(
+                    getContentUri(),
+                    IS_FORCE_TWO_PANE_ENABLED_METHOD,
+                    /* arg= */ null,
+                    /* extras= */ null);
+      } catch (IllegalArgumentException | SecurityException exception) {
+        Log.w(TAG, "isForceTwoPaneEnabled status is unknown; return as false.");
+      }
+    }
+    if (applyForceTwoPaneBundle != null && !applyForceTwoPaneBundle.isEmpty()) {
+      return applyForceTwoPaneBundle.getBoolean(IS_FORCE_TWO_PANE_ENABLED_METHOD, false);
+    }
+    return false;
   }
 
   @VisibleForTesting
