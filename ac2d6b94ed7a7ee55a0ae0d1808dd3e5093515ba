@@ -16,6 +16,24 @@
       "message": "Still need to test",
       "revId": "ac2d6b94ed7a7ee55a0ae0d1808dd3e5093515ba",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6aac9a3a_f48a9910",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-06-12T15:57:40Z",
+      "side": 1,
+      "message": "Working for me. Small quirk in transition to final \"Start\" page (shows wallpaper briefly and fades from it). Can/should be fixed when we properly adapt to upstream changes, a separate effort.",
+      "parentUuid": "b14212d3_42d90979",
+      "revId": "ac2d6b94ed7a7ee55a0ae0d1808dd3e5093515ba",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
