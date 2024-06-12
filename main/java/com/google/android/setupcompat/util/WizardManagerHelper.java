@@ -49,6 +49,11 @@ public final class WizardManagerHelper {
     }
   }
 
+  // EXTRA_SCRIPT_URI and EXTRA_ACTION_ID are used in setup wizard in versions before M and are
+  // kept for backwards compatibility.
+  @VisibleForTesting static final String EXTRA_SCRIPT_URI = "scriptUri";
+  @VisibleForTesting static final String EXTRA_ACTION_ID = "actionId";
+
   /** Extra for notifying an Activity that what SetupWizard flow is. */
   public static final String EXTRA_SUW_LIFECYCLE = "suw_lifecycle";
 
@@ -141,6 +146,10 @@ public final class WizardManagerHelper {
             EXTRA_IS_SETUP_FLOW,
             EXTRA_IS_SUW_SUGGESTED_ACTION_FLOW)) {
       dstIntent.putExtra(key, srcIntent.getBooleanExtra(key, false));
+    }
+
+    for (String key : Arrays.asList(EXTRA_THEME, EXTRA_SCRIPT_URI, EXTRA_ACTION_ID)) {
+      dstIntent.putExtra(key, srcIntent.getStringExtra(key));
     }
 
     // The TikTok code in Restore doesn't let us put serializable extras into intents.
