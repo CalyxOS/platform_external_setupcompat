@@ -265,11 +265,11 @@ public class FooterBarMixin implements Mixin {
   }
 
   private View addSpace() {
-    LinearLayout buttonContainerlayout = ensureFooterInflated();
+    LinearLayout buttonContainerLayout = ensureFooterInflated();
     View space = new View(context);
     space.setLayoutParams(new LayoutParams(0, 0, 1.0f));
     space.setVisibility(View.INVISIBLE);
-    buttonContainerlayout.addView(space);
+    buttonContainerLayout.addView(space);
     return space;
   }
 

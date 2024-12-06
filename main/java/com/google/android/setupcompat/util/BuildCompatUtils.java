@@ -87,6 +87,16 @@ public final class BuildCompatUtils {
         || isAtLeastPreReleaseCodename("UpsideDownCake");
   }
 
+  /**
+   * Implementation of BuildCompat.isAtLeastV() suitable for use in Setup
+   *
+   * @return Whether the current OS version is higher or equal to V.
+   */
+  @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+  public static boolean isAtLeastV() {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+  }
+
   private static boolean isAtLeastPreReleaseCodename(String codename) {
     // Special case "REL", which means the build is not a pre-release build.
     if (Build.VERSION.CODENAME.equals("REL")) {

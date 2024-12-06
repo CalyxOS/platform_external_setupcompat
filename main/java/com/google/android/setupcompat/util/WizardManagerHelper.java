@@ -54,7 +54,7 @@ public final class WizardManagerHelper {
 
   @VisibleForTesting public static final String ACTION_NEXT = "com.android.wizard.NEXT";
 
-  @VisibleForTesting static final String EXTRA_WIZARD_BUNDLE = "wizardBundle";
+  public static final String EXTRA_WIZARD_BUNDLE = "wizardBundle";
   private static final String EXTRA_RESULT_CODE = "com.android.setupwizard.ResultCode";
 
   /** Extra for notifying an Activity that it is inside the first SetupWizard flow or not. */
@@ -259,6 +259,8 @@ public final class WizardManagerHelper {
           || isDeferredSetupWizard(originalIntent);
     }
   }
+
+  // (--
 
   private WizardManagerHelper() {}
 }
