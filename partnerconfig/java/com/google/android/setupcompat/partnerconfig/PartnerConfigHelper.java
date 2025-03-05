@@ -41,6 +41,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.window.embedding.ActivityEmbeddingController;
 import com.google.android.setupcompat.partnerconfig.PartnerConfig.ResourceType;
 import com.google.android.setupcompat.util.BuildCompatUtils;
+import com.google.android.setupcompat.util.WizardManagerHelper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -90,10 +91,19 @@ public class PartnerConfigHelper {
   public static final String IS_FORCE_TWO_PANE_ENABLED_METHOD = "isForceTwoPaneEnabled";
 
   @VisibleForTesting
+  public static final String IS_GLIF_EXPRESSIVE_ENABLED = "isGlifExpressiveEnabled";
+
+  /** The method name to get the if the keyboard focus enhancement enabled */
+  @VisibleForTesting
+  public static final String IS_KEYBOARD_FOCUS_ENHANCEMENT_ENABLED_METHOD =
+      "isKeyboardFocusEnhancementEnabled";
+
+  @VisibleForTesting
   public static final String GET_SUW_DEFAULT_THEME_STRING_METHOD = "suwDefaultThemeString";
 
   @VisibleForTesting public static final String SUW_PACKAGE_NAME = "com.google.android.setupwizard";
   @VisibleForTesting public static final String MATERIAL_YOU_RESOURCE_SUFFIX = "_material_you";
+  @VisibleForTesting public static final String GLIF_EXPRESSIVE_RESOURCE_SUFFIX = "_expressive";
 
   @VisibleForTesting
   public static final String EMBEDDED_ACTIVITY_RESOURCE_SUFFIX = "_embedded_activity";
@@ -115,6 +125,8 @@ public class PartnerConfigHelper {
 
   @VisibleForTesting public static Bundle suwDefaultThemeBundle = null;
 
+  @VisibleForTesting public static Bundle keyboardFocusEnhancementBundle = null;
+
   private static PartnerConfigHelper instance = null;
 
   private final Context mContext;
@@ -135,6 +147,8 @@ public class PartnerConfigHelper {
   @SuppressWarnings("NonFinalStaticField")
   @VisibleForTesting
   public static Bundle applyForceTwoPaneBundle = null;
+
+  @VisibleForTesting public static Bundle applyGlifExpressiveBundle = null;
 
   @VisibleForTesting public static int savedOrientation = Configuration.ORIENTATION_PORTRAIT;
 
@@ -687,6 +701,8 @@ public class PartnerConfigHelper {
       resourceEntry = adjustEmbeddedActivityResourceEntryDefaultValue(context, resourceEntry);
     } else if (BuildCompatUtils.isAtLeastU() && isForceTwoPaneEnabled(context)) {
       resourceEntry = adjustForceTwoPaneResourceEntryDefaultValue(context, resourceEntry);
+    } else if (BuildCompatUtils.isAtLeastV() && isGlifExpressiveEnabled(context)) {
+      resourceEntry = adjustGlifExpressiveResourceEntryDefaultValue(context, resourceEntry);
     } else if (BuildCompatUtils.isAtLeastT() && shouldApplyMaterialYouStyle(context)) {
       resourceEntry = adjustMaterialYouResourceEntryDefaultValue(context, resourceEntry);
     }
@@ -867,6 +883,43 @@ public class PartnerConfigHelper {
     return resourceEntry;
   }
 
+  // Check the GlifExpressive flag and replace the inputResourceEntry.resourceName &
+  // inputResourceEntry.resourceId after V, that means if using GlifExpressive theme before V, will
+  // always use glifv4 resources.
+  ResourceEntry adjustGlifExpressiveResourceEntryDefaultValue(
+      Context context, ResourceEntry inputResourceEntry) {
+    // If not overlay resource
+    try {
+      if (Objects.equals(inputResourceEntry.getPackageName(), SUW_PACKAGE_NAME)) {
+        String resourceTypeName =
+            inputResourceEntry
+                .getResources()
+                .getResourceTypeName(inputResourceEntry.getResourceId());
+        // try to update resourceName & resourceId
+        String glifExpressiveResourceName =
+            inputResourceEntry.getResourceName().concat(GLIF_EXPRESSIVE_RESOURCE_SUFFIX);
+        int glifExpressiveResourceId =
+            inputResourceEntry
+                .getResources()
+                .getIdentifier(
+                    glifExpressiveResourceName,
+                    resourceTypeName,
+                    inputResourceEntry.getPackageName());
+        if (glifExpressiveResourceId != 0) {
+          Log.i(TAG, "use expressive resource:" + glifExpressiveResourceName);
+          return new ResourceEntry(
+              inputResourceEntry.getPackageName(),
+              glifExpressiveResourceName,
+              glifExpressiveResourceId,
+              inputResourceEntry.getResources());
+        }
+      }
+    } catch (NotFoundException ex) {
+      // fall through
+    }
+    return inputResourceEntry;
+  }
+
   @VisibleForTesting
   public static synchronized void resetInstance() {
     instance = null;
@@ -880,6 +933,8 @@ public class PartnerConfigHelper {
     suwDefaultThemeBundle = null;
     applyTransitionBundle = null;
     applyForceTwoPaneBundle = null;
+    applyGlifExpressiveBundle = null;
+    keyboardFocusEnhancementBundle = null;
   }
 
   /**
@@ -963,8 +1018,9 @@ public class PartnerConfigHelper {
       }
     }
 
-    return (applyMaterialYouConfigBundle != null
-        && applyMaterialYouConfigBundle.getBoolean(IS_MATERIAL_YOU_STYLE_ENABLED_METHOD, false));
+    return ((applyMaterialYouConfigBundle != null
+            && applyMaterialYouConfigBundle.getBoolean(IS_MATERIAL_YOU_STYLE_ENABLED_METHOD, false))
+        || isGlifExpressiveEnabled(context));
   }
 
   /**
@@ -1155,6 +1211,62 @@ public class PartnerConfigHelper {
     }
     if (applyForceTwoPaneBundle != null && !applyForceTwoPaneBundle.isEmpty()) {
       return applyForceTwoPaneBundle.getBoolean(IS_FORCE_TWO_PANE_ENABLED_METHOD, false);
+    }
+    return false;
+  }
+
+  /** Returns whether the keyboard focus enhancement is enabled. */
+  public static boolean isKeyboardFocusEnhancementEnabled(@NonNull Context context) {
+    if (keyboardFocusEnhancementBundle == null || keyboardFocusEnhancementBundle.isEmpty()) {
+      try {
+        keyboardFocusEnhancementBundle =
+            context
+                .getContentResolver()
+                .call(
+                    getContentUri(),
+                    IS_KEYBOARD_FOCUS_ENHANCEMENT_ENABLED_METHOD,
+                    /* arg= */ null,
+                    /* extras= */ null);
+      } catch (IllegalArgumentException | SecurityException exception) {
+        Log.w(TAG, "SetupWizard keyboard focus enhancement status unknown; return as false.");
+        keyboardFocusEnhancementBundle = null;
+        return false;
+      }
+    }
+    if (keyboardFocusEnhancementBundle == null || keyboardFocusEnhancementBundle.isEmpty()) {
+      return false;
+    }
+    return keyboardFocusEnhancementBundle.getBoolean(IS_KEYBOARD_FOCUS_ENHANCEMENT_ENABLED_METHOD);
+  }
+
+  /**
+   * Returns true if the SetupWizard supports Glif Expressive style inside or outside setup flow.
+   */
+  public static boolean isGlifExpressiveEnabled(@NonNull Context context) {
+
+    if (applyGlifExpressiveBundle == null || applyGlifExpressiveBundle.isEmpty()) {
+      try {
+        Activity activity = lookupActivityFromContext(context);
+        // Save inside/outside setup wizard flag into bundle
+        Bundle extras = new Bundle();
+        extras.putBoolean(
+            WizardManagerHelper.EXTRA_IS_SETUP_FLOW,
+            WizardManagerHelper.isAnySetupWizard(activity.getIntent()));
+
+        applyGlifExpressiveBundle =
+            context
+                .getContentResolver()
+                .call(
+                    getContentUri(),
+                    IS_GLIF_EXPRESSIVE_ENABLED,
+                    /* arg= */ null,
+                    /* extras= */ extras);
+      } catch (IllegalArgumentException | SecurityException exception) {
+        Log.w(TAG, "isGlifExpressiveEnabled status is unknown; return as false.");
+      }
+    }
+    if (applyGlifExpressiveBundle != null && !applyGlifExpressiveBundle.isEmpty()) {
+      return applyGlifExpressiveBundle.getBoolean(IS_GLIF_EXPRESSIVE_ENABLED, false);
     }
     return false;
   }

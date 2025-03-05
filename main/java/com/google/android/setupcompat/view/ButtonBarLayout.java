@@ -42,6 +42,8 @@ public class ButtonBarLayout extends LinearLayout {
   private int originalPaddingLeft;
   private int originalPaddingRight;
 
+  private boolean stackedButtonForExpressiveStyle;
+
   public ButtonBarLayout(Context context) {
     super(context);
   }
@@ -70,7 +72,8 @@ public class ButtonBarLayout extends LinearLayout {
 
     super.onMeasure(initialWidthMeasureSpec, heightMeasureSpec);
 
-    final boolean childrenLargerThanContainer = (widthSize > 0) && (getMeasuredWidth() > widthSize);
+    final boolean childrenLargerThanContainer =
+        ((widthSize > 0) && (getMeasuredWidth() > widthSize)) || stackedButtonForExpressiveStyle;
     if (!isFooterButtonsEvenlyWeighted(getContext()) && childrenLargerThanContainer) {
       setStacked(true);
 
@@ -133,8 +136,15 @@ public class ButtonBarLayout extends LinearLayout {
     }
 
     if (stacked) {
-      // When stacked, the buttons need to be kept in the center of the button bar.
-      setHorizontalGravity(Gravity.CENTER);
+      if (getContext().getResources().getBoolean(R.bool.sucTwoPaneLayoutStyle)
+          && PartnerConfigHelper.isGlifExpressiveEnabled(getContext())) {
+        // When device in the two pane mode and glif expressive flag enabled, the button should
+        // aligned to the end.
+        setHorizontalGravity(Gravity.END);
+      } else {
+        // When stacked, the buttons need to be kept in the center of the button bar.
+        setHorizontalGravity(Gravity.CENTER);
+      }
       // HACK: In the default button bar style, the left and right paddings are not
       // balanced to compensate for different alignment for borderless (left) button and
       // the raised (right) button. When it's stacked, we want the buttons to be centered,
@@ -215,6 +225,14 @@ public class ButtonBarLayout extends LinearLayout {
       return true;
     } else {
       return false;
+    }
+  }
+
+  public void setStackedButtonForExpressiveStyle(boolean isStacked) {
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(getContext())) {
+      stackedButtonForExpressiveStyle = isStacked;
+    } else {
+      stackedButtonForExpressiveStyle = false;
     }
   }
 }

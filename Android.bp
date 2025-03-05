@@ -98,6 +98,7 @@ android_library {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.window_window",
+        "com.google.android.material_material",
         "error_prone_annotations",
     ],
     min_sdk_version: "21",
@@ -108,6 +109,10 @@ android_library {
     lint: {
         baseline_filename: "lint-baseline.xml",
     },
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.healthfitness",
+    ],
 }
 
 android_library {
@@ -126,6 +131,7 @@ android_library {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.window_window",
+        "com.google.android.material_material",
         "error_prone_annotations",
     ],
     min_sdk_version: "21",

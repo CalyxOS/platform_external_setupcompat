@@ -80,6 +80,7 @@ public final class FooterButton implements OnClickListener {
    * @param listener The listener for button.
    * @param buttonType The type of button.
    * @param theme The theme for button.
+   * @param visibility the visibility for button.
    */
   private FooterButton(
       CharSequence text,
@@ -87,13 +88,15 @@ public final class FooterButton implements OnClickListener {
       @ButtonType int buttonType,
       @StyleRes int theme,
       Locale locale,
-      int direction) {
+      int direction,
+      int visibility) {
     this.text = text;
     onClickListener = listener;
     this.buttonType = buttonType;
     this.theme = theme;
     this.locale = locale;
     this.direction = direction;
+    this.visibility = visibility;
   }
 
   /** Returns the text that this footer button is displaying. */
@@ -366,6 +369,7 @@ public final class FooterButton implements OnClickListener {
    *         .setTheme(R.style.SuwGlifButton_Primary)
    *         .setTextLocale(Locale.CANADA)
    *         .setLayoutDirection(View.LAYOUT_DIRECTION_LTR)
+   *         .setVisibility(View.VISIBLE)
    *         .build();
    * </pre>
    */
@@ -377,6 +381,8 @@ public final class FooterButton implements OnClickListener {
     private OnClickListener onClickListener = null;
     @ButtonType private int buttonType = ButtonType.OTHER;
     private int theme = 0;
+
+    private int visibility = View.VISIBLE;
 
     public Builder(@NonNull Context context) {
       this.context = context;
@@ -424,8 +430,15 @@ public final class FooterButton implements OnClickListener {
       return this;
     }
 
+    /** Sets the {@code visibility} of FooterButton. */
+    public Builder setVisibility(int visibility) {
+      this.visibility = visibility;
+      return this;
+    }
+
     public FooterButton build() {
-      return new FooterButton(text, onClickListener, buttonType, theme, locale, direction);
+      return new FooterButton(
+          text, onClickListener, buttonType, theme, locale, direction, visibility);
     }
   }
 }

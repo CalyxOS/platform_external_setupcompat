@@ -22,7 +22,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.provider.Settings;
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 import com.google.errorprone.annotations.InlineMe;
 import java.util.Arrays;
 
@@ -52,10 +51,12 @@ public final class WizardManagerHelper {
   /** Extra for notifying an Activity that what SetupWizard flow is. */
   public static final String EXTRA_SUW_LIFECYCLE = "suw_lifecycle";
 
-  @VisibleForTesting public static final String ACTION_NEXT = "com.android.wizard.NEXT";
+  public static final String ACTION_NEXT = "com.android.wizard.NEXT";
 
   public static final String EXTRA_WIZARD_BUNDLE = "wizardBundle";
-  private static final String EXTRA_RESULT_CODE = "com.android.setupwizard.ResultCode";
+
+  /** Extra used for including the resultcode of a wizardmanager action. */
+  public static final String EXTRA_RESULT_CODE = "com.android.setupwizard.ResultCode";
 
   /** Extra for notifying an Activity that it is inside the first SetupWizard flow or not. */
   public static final String EXTRA_IS_FIRST_RUN = "firstRun";

@@ -22,8 +22,6 @@ import android.os.Bundle;
  * Declares the interface for compat related service methods.
  */
 interface ISetupCompatService {
-  /** Notifies SetupWizard that the screen is using PartnerCustomizationLayout */
-  oneway void validateActivity(String screenName, in Bundle arguments) = 0;
 
   oneway void logMetric(int metricType, in Bundle arguments, in Bundle extras) = 1;
 

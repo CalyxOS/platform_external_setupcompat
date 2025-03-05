@@ -52,10 +52,6 @@ public class LifecycleFragment extends Fragment {
    */
   public static LifecycleFragment attachNow(Activity activity) {
     if (WizardManagerHelper.isAnySetupWizard(activity.getIntent())) {
-      SetupCompatServiceInvoker.get(activity.getApplicationContext())
-          .bindBack(
-              LayoutBindBackHelper.getScreenName(activity),
-              LayoutBindBackHelper.getExtraBundle(activity));
 
       if (VERSION.SDK_INT > VERSION_CODES.M) {
         FragmentManager fragmentManager = activity.getFragmentManager();

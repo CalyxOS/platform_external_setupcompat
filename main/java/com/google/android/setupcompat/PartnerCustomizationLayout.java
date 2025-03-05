@@ -309,13 +309,20 @@ public class PartnerCustomizationLayout extends TemplateLayout {
    * {@code false}.
    */
   public boolean shouldApplyDynamicColor() {
-    if (!useDynamicColor) {
-      return false;
-    }
     if (!BuildCompatUtils.isAtLeastS()) {
       return false;
     }
+
     if (!PartnerConfigHelper.get(getContext()).isAvailable()) {
+      return false;
+    }
+
+    // If the dynamic theme is applied, useDynamicColor would be true and shouldApplyDynamicColor
+    // would return true.
+    if (useDynamicColor) {
+      return true;
+    }
+    if (!PartnerConfigHelper.isSetupWizardDynamicColorEnabled(getContext())) {
       return false;
     }
     return true;
@@ -323,23 +330,23 @@ public class PartnerCustomizationLayout extends TemplateLayout {
 
   /**
    * Returns {@code true} if the current layout/activity applies full dynamic color. Otherwise,
-   * returns {@code false}. This method combines the result of {@link #shouldApplyDynamicColor()}
-   * and the value of the {@code app:sucFullDynamicColor}.
+   * returns {@code false}. This method combines the result of {@link #shouldApplyDynamicColor()},
+   * the value of the {@code app:sucFullDynamicColor}, and the result of {@link
+   * PartnerConfigHelper#isSetupWizardFullDynamicColorEnabled(Context)}.
    */
   public boolean useFullDynamicColor() {
-    return shouldApplyDynamicColor() && useFullDynamicColorAttr;
+    return shouldApplyDynamicColor()
+        && (useFullDynamicColorAttr
+            || PartnerConfigHelper.isSetupWizardFullDynamicColorEnabled(getContext()));
   }
 
   /**
-   * Sets a logging observer for {@link FooterBarMixin}. The logging observer is used to log
-   * impressions and clicks on the layout and footer bar buttons.
-   *
-   * @throws UnsupportedOperationException if the primary or secondary button has been set before
-   *     the logging observer is set
+   * Sets a logging observer for {@link FooterBarMixin}. The logging observer is used to log UI
+   * events (e.g. page impressions and button clicks) on the layout and footer bar buttons.
    */
   public void setLoggingObserver(LoggingObserver loggingObserver) {
-    getMixin(FooterBarMixin.class).setLoggingObserver(loggingObserver);
     loggingObserver.log(new LayoutInflatedEvent(this));
+    getMixin(FooterBarMixin.class).setLoggingObserver(loggingObserver);
   }
 
   /**

@@ -32,8 +32,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * This class is responsible for safely executing methods on SetupCompatService. To avoid memory
  * issues due to backed up queues, an upper bound of {@link
- * ExecutorProvider#SETUP_METRICS_LOGGER_MAX_QUEUED} is set on the logging executor service's queue
- * and {@link ExecutorProvider#SETUP_COMPAT_BINDBACK_MAX_QUEUED} on the overall executor service.
+ * ExecutorProvider#SETUP_METRICS_LOGGER_MAX_QUEUED} is set on the logging executor service's queue.
  * Once the upper bound is reached, metrics published after this event are dropped silently.
  *
  * <p>NOTE: This class is not meant to be used directly. Please use {@link
@@ -49,14 +48,6 @@ public class SetupCompatServiceInvoker {
       loggingExecutor.execute(() -> invokeLogMetric(metricType, args));
     } catch (RejectedExecutionException e) {
       LOG.e(String.format("Metric of type %d dropped since queue is full.", metricType), e);
-    }
-  }
-
-  public void bindBack(String screenName, Bundle bundle) {
-    try {
-      loggingExecutor.execute(() -> invokeBindBack(screenName, bundle));
-    } catch (RejectedExecutionException e) {
-      LOG.e(String.format("Screen %s bind back fail.", screenName), e);
     }
   }
 
@@ -106,23 +97,6 @@ public class SetupCompatServiceInvoker {
           String.format(
               "Exception occurred while %s trying report windowFocusChange to SetupWizard.",
               screenName),
-          e);
-    }
-  }
-
-  private void invokeBindBack(String screenName, Bundle bundle) {
-    try {
-      ISetupCompatService setupCompatService =
-          SetupCompatServiceProvider.get(
-              context, waitTimeInMillisForServiceConnection, TimeUnit.MILLISECONDS);
-      if (setupCompatService != null) {
-        setupCompatService.validateActivity(screenName, bundle);
-      } else {
-        LOG.w("BindBack failed since service reference is null. Are the permissions valid?");
-      }
-    } catch (InterruptedException | TimeoutException | RemoteException e) {
-      LOG.e(
-          String.format("Exception occurred while %s trying bind back to SetupWizard.", screenName),
           e);
     }
   }

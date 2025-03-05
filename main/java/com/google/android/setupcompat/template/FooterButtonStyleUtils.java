@@ -291,12 +291,12 @@ public class FooterButtonStyleUtils {
       }
       float alpha =
           PartnerConfigHelper.get(context).getFraction(context, buttonRippleColorAlphaConfig);
-      updateButtonRippleColor(button, textDefaultColor, alpha);
+      updateButtonRippleColor(context, button, textDefaultColor, alpha);
     }
   }
 
   private static void updateButtonRippleColor(
-      Button button, @ColorInt int textColor, float rippleAlpha) {
+      Context context, Button button, @ColorInt int textColor, float rippleAlpha) {
     // RippleDrawable is available after sdk 21. And because on lower sdk the RippleDrawable is
     // unavailable. Since Stencil customization provider only works on Q+, there is no need to
     // perform any customization for versions 21.
@@ -315,7 +315,13 @@ public class FooterButtonStyleUtils {
           new ColorStateList(
               new int[][] {pressedState, focusState, StateSet.NOTHING},
               new int[] {argbColor, argbColor, Color.TRANSPARENT});
-      rippleDrawable.setColor(colorStateList);
+      if (PartnerConfigHelper.isGlifExpressiveEnabled(context)
+          && button instanceof MaterialFooterActionButton) {
+        MaterialFooterActionButton materialButton = (MaterialFooterActionButton) button;
+        materialButton.setRippleColor(colorStateList);
+      } else {
+        rippleDrawable.setColor(colorStateList);
+      }
     }
   }
 
@@ -388,9 +394,15 @@ public class FooterButtonStyleUtils {
       Context context, Button button, PartnerConfig buttonRadiusConfig) {
     if (Build.VERSION.SDK_INT >= VERSION_CODES.N) {
       float radius = PartnerConfigHelper.get(context).getDimension(context, buttonRadiusConfig);
-      GradientDrawable gradientDrawable = getGradientDrawable(button);
-      if (gradientDrawable != null) {
-        gradientDrawable.setCornerRadius(radius);
+      if (PartnerConfigHelper.isGlifExpressiveEnabled(context)
+          && button instanceof MaterialFooterActionButton) {
+        MaterialFooterActionButton materialButton = (MaterialFooterActionButton) button;
+        materialButton.setCornerRadius((int) radius);
+      } else {
+        GradientDrawable gradientDrawable = getGradientDrawable(button);
+        if (gradientDrawable != null) {
+          gradientDrawable.setCornerRadius(radius);
+        }
       }
     }
   }

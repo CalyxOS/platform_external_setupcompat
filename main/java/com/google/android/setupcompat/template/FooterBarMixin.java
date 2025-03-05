@@ -25,15 +25,22 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
+import android.text.Layout.Alignment;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
+import android.view.ViewTreeObserver;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
@@ -47,6 +54,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StyleRes;
 import androidx.annotation.VisibleForTesting;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.setupcompat.PartnerCustomizationLayout;
 import com.google.android.setupcompat.R;
 import com.google.android.setupcompat.internal.FooterButtonPartnerConfig;
@@ -57,6 +65,9 @@ import com.google.android.setupcompat.logging.internal.FooterBarMixinMetrics;
 import com.google.android.setupcompat.partnerconfig.PartnerConfig;
 import com.google.android.setupcompat.partnerconfig.PartnerConfigHelper;
 import com.google.android.setupcompat.template.FooterButton.ButtonType;
+import com.google.android.setupcompat.util.KeyboardHelper;
+import com.google.android.setupcompat.util.Logger;
+import com.google.android.setupcompat.view.ButtonBarLayout;
 import java.util.Locale;
 
 /**
@@ -65,6 +76,8 @@ import java.util.Locale;
  * are "primary" accent-colored buttons.
  */
 public class FooterBarMixin implements Mixin {
+
+  private static final Logger LOG = new Logger("FooterBarMixin");
 
   private final Context context;
 
@@ -93,6 +106,11 @@ public class FooterBarMixin implements Mixin {
   @ColorInt private final int footerBarSecondaryBackgroundColor;
   private boolean removeFooterBarWhenEmpty = true;
   private boolean isSecondaryButtonInPrimaryStyle = false;
+  private final int footerBarPrimaryButtonEnabledTextColor;
+  private final int footerBarSecondaryButtonEnabledTextColor;
+  private final int footerBarPrimaryButtonDisabledTextColor;
+  private final int footerBarSecondaryButtonDisabledTextColor;
+  @VisibleForTesting final int footerBarButtonMiddleSpacing;
 
   @VisibleForTesting public final FooterBarMixinMetrics metrics = new FooterBarMixinMetrics();
 
@@ -106,16 +124,35 @@ public class FooterBarMixin implements Mixin {
           Button button = buttonContainer.findViewById(id);
           if (button != null) {
             button.setEnabled(enabled);
-            if (applyPartnerResources && !applyDynamicColor) {
 
-              updateButtonTextColorWithStates(
-                  button,
-                  (id == primaryButtonId || isSecondaryButtonInPrimaryStyle)
-                      ? PartnerConfig.CONFIG_FOOTER_PRIMARY_BUTTON_TEXT_COLOR
-                      : PartnerConfig.CONFIG_FOOTER_SECONDARY_BUTTON_TEXT_COLOR,
-                  (id == primaryButtonId || isSecondaryButtonInPrimaryStyle)
-                      ? PartnerConfig.CONFIG_FOOTER_PRIMARY_BUTTON_DISABLED_TEXT_COLOR
-                      : PartnerConfig.CONFIG_FOOTER_SECONDARY_BUTTON_DISABLED_TEXT_COLOR);
+            // TODO: b/364981299 - Use partner config to allow user to customize text color.
+            if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+              if (id == primaryButtonId) {
+                updateTextColorForButton(
+                    button,
+                    enabled,
+                    enabled
+                        ? footerBarPrimaryButtonEnabledTextColor
+                        : footerBarPrimaryButtonDisabledTextColor);
+              } else if (id == secondaryButtonId) {
+                updateTextColorForButton(
+                    button,
+                    enabled,
+                    enabled
+                        ? footerBarSecondaryButtonEnabledTextColor
+                        : footerBarSecondaryButtonDisabledTextColor);
+              }
+            } else {
+              if (applyPartnerResources && !applyDynamicColor) {
+                updateButtonTextColorWithStates(
+                    button,
+                    (id == primaryButtonId || isSecondaryButtonInPrimaryStyle)
+                        ? PartnerConfig.CONFIG_FOOTER_PRIMARY_BUTTON_TEXT_COLOR
+                        : PartnerConfig.CONFIG_FOOTER_SECONDARY_BUTTON_TEXT_COLOR,
+                    (id == primaryButtonId || isSecondaryButtonInPrimaryStyle)
+                        ? PartnerConfig.CONFIG_FOOTER_PRIMARY_BUTTON_DISABLED_TEXT_COLOR
+                        : PartnerConfig.CONFIG_FOOTER_SECONDARY_BUTTON_DISABLED_TEXT_COLOR);
+              }
             }
           }
         }
@@ -128,6 +165,10 @@ public class FooterBarMixin implements Mixin {
           if (button != null) {
             button.setVisibility(visibility);
             autoSetButtonBarVisibility();
+
+            if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+              setButtonWidthForExpressiveStyle(/* isDownButton= */ false);
+            }
           }
         }
       }
@@ -206,6 +247,20 @@ public class FooterBarMixin implements Mixin {
         a.getColor(R.styleable.SucFooterBarMixin_sucFooterBarSecondaryFooterBackground, 0);
     footerButtonAlignEnd =
         a.getBoolean(R.styleable.SucFooterBarMixin_sucFooterBarButtonAlignEnd, false);
+    footerBarPrimaryButtonEnabledTextColor =
+        a.getColor(
+            R.styleable.SucFooterBarMixin_sucFooterBarPrimaryFooterButtonEnabledTextColor, 0);
+    footerBarSecondaryButtonEnabledTextColor =
+        a.getColor(
+            R.styleable.SucFooterBarMixin_sucFooterBarSecondaryFooterButtonEnabledTextColor, 0);
+    footerBarPrimaryButtonDisabledTextColor =
+        a.getColor(
+            R.styleable.SucFooterBarMixin_sucFooterBarPrimaryFooterButtonDisabledTextColor, 0);
+    footerBarSecondaryButtonDisabledTextColor =
+        a.getColor(
+            R.styleable.SucFooterBarMixin_sucFooterBarSecondaryFooterButtonDisabledTextColor, 0);
+    footerBarButtonMiddleSpacing =
+        a.getDimensionPixelSize(R.styleable.SucFooterBarMixin_sucFooterBarButtonMiddleSpacing, 0);
 
     int primaryBtn =
         a.getResourceId(R.styleable.SucFooterBarMixin_sucFooterBarPrimaryFooterButton, 0);
@@ -379,15 +434,34 @@ public class FooterBarMixin implements Mixin {
   }
 
   /**
-   * Inflate FooterActionButton with layout "suc_button". Subclasses can implement this method to
+   * Inflate IFooterActionButton with layout "suc_button". Subclasses can implement this method to
    * modify the footer button layout as necessary.
    */
   @SuppressLint("InflateParams")
-  protected FooterActionButton createThemedButton(Context context, @StyleRes int theme) {
+  protected IFooterActionButton createThemedButton(Context context, @StyleRes int theme) {
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+      try {
+        if (theme == R.style.SucGlifMaterialButton_Primary) {
+          return new MaterialFooterActionButton(
+              new ContextThemeWrapper(context, theme), null, R.attr.sucMaterialButtonStyle);
+        } else {
+          return new MaterialFooterActionButton(
+              new ContextThemeWrapper(context, theme), null, R.attr.sucMaterialOutlinedButtonStyle);
+        }
+      } catch (IllegalArgumentException e) {
+        LOG.e("Applyed invalid material theme: " + e);
+        // fallback theme style to glif theme
+        if (theme == R.style.SucGlifMaterialButton_Primary) {
+          theme = R.style.SucPartnerCustomizationButton_Primary;
+        } else {
+          theme = R.style.SucPartnerCustomizationButton_Secondary;
+        }
+      }
+    }
     // Inflate a single button from XML, which when using support lib, will take advantage of
     // the injected layout inflater and give us AppCompatButton instead.
     LayoutInflater inflater = LayoutInflater.from(new ContextThemeWrapper(context, theme));
-    return (FooterActionButton) inflater.inflate(R.layout.suc_button, null, false);
+    return (IFooterActionButton) inflater.inflate(R.layout.suc_button, null, false);
   }
 
   /** Sets primary button for footer. */
@@ -396,13 +470,21 @@ public class FooterBarMixin implements Mixin {
     ensureOnMainThread("setPrimaryButton");
     ensureFooterInflated();
 
+    int defaultPartnerTheme;
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+      defaultPartnerTheme = R.style.SucGlifMaterialButton_Primary;
+    } else {
+      defaultPartnerTheme = R.style.SucPartnerCustomizationButton_Primary;
+    }
+
+    // TODO: b/364980746 - Use partner config to allow user to customize primary bg color.
     // Setup button partner config
     FooterButtonPartnerConfig footerButtonPartnerConfig =
         new FooterButtonPartnerConfig.Builder(footerButton)
             .setPartnerTheme(
                 getPartnerTheme(
                     footerButton,
-                    /* defaultPartnerTheme= */ R.style.SucPartnerCustomizationButton_Primary,
+                    /* defaultPartnerTheme= */ defaultPartnerTheme,
                     /* buttonBackgroundColorConfig= */ PartnerConfig
                         .CONFIG_FOOTER_PRIMARY_BUTTON_BG_COLOR))
             .setButtonBackgroundConfig(PartnerConfig.CONFIG_FOOTER_PRIMARY_BUTTON_BG_COLOR)
@@ -422,14 +504,32 @@ public class FooterBarMixin implements Mixin {
             .setTextStyleConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_TEXT_STYLE)
             .build();
 
-    FooterActionButton button = inflateButton(footerButton, footerButtonPartnerConfig);
+    IFooterActionButton buttonImpl = inflateButton(footerButton, footerButtonPartnerConfig);
     // update information for primary button. Need to update as long as the button inflated.
+    Button button = (Button) buttonImpl;
     primaryButtonId = button.getId();
-    button.setPrimaryButtonStyle(/* isPrimaryButtonStyle= */ true);
+    if (buttonImpl instanceof MaterialFooterActionButton) {
+      ((MaterialFooterActionButton) buttonImpl)
+          .setPrimaryButtonStyle(/* isPrimaryButtonStyle= */ true);
+    } else if (button instanceof FooterActionButton) {
+      ((FooterActionButton) buttonImpl).setPrimaryButtonStyle(/* isPrimaryButtonStyle= */ true);
+    } else {
+      LOG.e("Set the primary button style error when setting primary button.");
+    }
     primaryButton = footerButton;
     primaryButtonPartnerConfigForTesting = footerButtonPartnerConfig;
     onFooterButtonInflated(button, footerBarPrimaryBackgroundColor);
     onFooterButtonApplyPartnerResource(button, footerButtonPartnerConfig);
+    // TODO: b/364981299 - Use partner config to allow user to customize text color.
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+      boolean enabled = primaryButton.isEnabled();
+      updateTextColorForButton(
+          button,
+          enabled,
+          enabled
+              ? footerBarPrimaryButtonEnabledTextColor
+              : footerBarPrimaryButtonDisabledTextColor);
+    }
     if (loggingObserver != null) {
       loggingObserver.log(
           new ButtonInflatedEvent(getPrimaryButtonView(), LoggingObserver.ButtonType.PRIMARY));
@@ -439,6 +539,15 @@ public class FooterBarMixin implements Mixin {
     // Make sure the position of buttons are correctly and prevent primary button create twice or
     // more.
     repopulateButtons();
+
+    // The requestFocus() is only working after activity onResume.
+    button.post(
+        () -> {
+          if (KeyboardHelper.isKeyboardFocusEnhancementEnabled(context)
+              && KeyboardHelper.hasHardwareKeyboard(context)) {
+            button.requestFocus();
+          }
+        });
   }
 
   /** Returns the {@link FooterButton} of primary button. */
@@ -475,15 +584,26 @@ public class FooterBarMixin implements Mixin {
     isSecondaryButtonInPrimaryStyle = usePrimaryStyle;
     ensureFooterInflated();
 
+    int defaultPartnerTheme;
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+      defaultPartnerTheme =
+          usePrimaryStyle
+              ? R.style.SucGlifMaterialButton_Primary
+              : R.style.SucGlifMaterialButton_Secondary;
+    } else {
+      defaultPartnerTheme =
+          usePrimaryStyle
+              ? R.style.SucPartnerCustomizationButton_Primary
+              : R.style.SucPartnerCustomizationButton_Secondary;
+    }
+
     // Setup button partner config
     FooterButtonPartnerConfig footerButtonPartnerConfig =
         new FooterButtonPartnerConfig.Builder(footerButton)
             .setPartnerTheme(
                 getPartnerTheme(
                     footerButton,
-                    /* defaultPartnerTheme= */ usePrimaryStyle
-                        ? R.style.SucPartnerCustomizationButton_Primary
-                        : R.style.SucPartnerCustomizationButton_Secondary,
+                    /* defaultPartnerTheme= */ defaultPartnerTheme,
                     /* buttonBackgroundColorConfig= */ usePrimaryStyle
                         ? PartnerConfig.CONFIG_FOOTER_PRIMARY_BUTTON_BG_COLOR
                         : PartnerConfig.CONFIG_FOOTER_SECONDARY_BUTTON_BG_COLOR))
@@ -512,15 +632,32 @@ public class FooterBarMixin implements Mixin {
             .setTextStyleConfig(PartnerConfig.CONFIG_FOOTER_BUTTON_TEXT_STYLE)
             .build();
 
-    FooterActionButton button = inflateButton(footerButton, footerButtonPartnerConfig);
+    IFooterActionButton buttonImpl = inflateButton(footerButton, footerButtonPartnerConfig);
     // update information for secondary button. Need to update as long as the button inflated.
+    Button button = (Button) buttonImpl;
     secondaryButtonId = button.getId();
-    button.setPrimaryButtonStyle(usePrimaryStyle);
+    if (buttonImpl instanceof MaterialFooterActionButton) {
+      ((MaterialFooterActionButton) buttonImpl).setPrimaryButtonStyle(usePrimaryStyle);
+    } else if (button instanceof FooterActionButton) {
+      ((FooterActionButton) buttonImpl).setPrimaryButtonStyle(usePrimaryStyle);
+    } else {
+      LOG.e("Set the primary button style error when setting secondary button.");
+    }
     secondaryButton = footerButton;
     secondaryButtonPartnerConfigForTesting = footerButtonPartnerConfig;
 
     onFooterButtonInflated(button, footerBarSecondaryBackgroundColor);
     onFooterButtonApplyPartnerResource(button, footerButtonPartnerConfig);
+    // TODO: b/364981299 - Use partner config to allow user to customize text color.
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+      boolean enabled = secondaryButton.isEnabled();
+      updateTextColorForButton(
+          button,
+          enabled,
+          enabled
+              ? footerBarSecondaryButtonEnabledTextColor
+              : footerBarSecondaryButtonDisabledTextColor);
+    }
     if (loggingObserver != null) {
       loggingObserver.log(new ButtonInflatedEvent(button, LoggingObserver.ButtonType.SECONDARY));
       footerButton.setLoggingObserver(loggingObserver);
@@ -529,6 +666,18 @@ public class FooterBarMixin implements Mixin {
     // Make sure the position of buttons are correctly and prevent secondary button create twice or
     // more.
     repopulateButtons();
+
+    // The requestFocus() is only working after activity onResume.
+    button.post(
+        () -> {
+          if (KeyboardHelper.isKeyboardFocusEnhancementEnabled(context)
+              && KeyboardHelper.hasHardwareKeyboard(context)
+              && (primaryButtonId == 0
+                  // primary button may not be visible but it has been created
+                  || getPrimaryButtonView().getVisibility() != View.VISIBLE)) {
+            button.requestFocus();
+          }
+        });
   }
 
   /**
@@ -545,7 +694,10 @@ public class FooterBarMixin implements Mixin {
     boolean isLandscape =
         context.getResources().getConfiguration().orientation
             == Configuration.ORIENTATION_LANDSCAPE;
-    if (isLandscape && isEvenlyWeightedButtons && isFooterButtonAlignedEnd()) {
+    if (isLandscape
+        && isEvenlyWeightedButtons
+        && isFooterButtonAlignedEnd()
+        && !PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
       addSpace();
     }
 
@@ -562,7 +714,7 @@ public class FooterBarMixin implements Mixin {
       }
       buttonContainer.addView(tempSecondaryButton);
     }
-    if (!isFooterButtonAlignedEnd()) {
+    if (!isFooterButtonAlignedEnd() && !PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
       addSpace();
     }
     if (tempPrimaryButton != null) {
@@ -570,6 +722,10 @@ public class FooterBarMixin implements Mixin {
     }
 
     setEvenlyWeightedButtons(tempPrimaryButton, tempSecondaryButton, isEvenlyWeightedButtons);
+
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
+      setButtonWidthForExpressiveStyle(/* isDownButton= */ false);
+    }
   }
 
   private void setEvenlyWeightedButtons(
@@ -588,7 +744,7 @@ public class FooterBarMixin implements Mixin {
       if (primaryButton != null) {
         LinearLayout.LayoutParams primaryLayoutParams =
             (LinearLayout.LayoutParams) primaryButton.getLayoutParams();
-        if (null != primaryLayoutParams) {
+        if (primaryLayoutParams != null) {
           primaryLayoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
           primaryLayoutParams.weight = 0;
           primaryButton.setLayoutParams(primaryLayoutParams);
@@ -597,10 +753,213 @@ public class FooterBarMixin implements Mixin {
       if (secondaryButton != null) {
         LinearLayout.LayoutParams secondaryLayoutParams =
             (LinearLayout.LayoutParams) secondaryButton.getLayoutParams();
-        if (null != secondaryLayoutParams) {
+        if (secondaryLayoutParams != null) {
           secondaryLayoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
           secondaryLayoutParams.weight = 0;
           secondaryButton.setLayoutParams(secondaryLayoutParams);
+        }
+      }
+    }
+  }
+
+  // TODO: b/369285240 - Migrate setButtonWidthForExpressiveStyle of FooterBarMixin to
+  /** Sets button width for expressive style. */
+  public void setButtonWidthForExpressiveStyle(boolean isDownButton) {
+    final ViewTreeObserver.OnGlobalLayoutListener onGlobalLayoutListener =
+        new OnGlobalLayoutListener() {
+          @Override
+          public void onGlobalLayout() {
+            int initialLeftMargin = 0;
+            if (!isDownButton) {
+              Button primaryButton = getPrimaryButtonView();
+              Button secondaryButton = getSecondaryButtonView();
+              DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+              int screenWidth = displayMetrics.widthPixels;
+              if (isTwoPaneLayout()) {
+                screenWidth = screenWidth / 2;
+                if (primaryButton != null) {
+                  // Set back the margin once down button scrolling to the bottom.
+                  LinearLayout.LayoutParams primaryLayoutParams =
+                      ((LayoutParams) primaryButton.getLayoutParams());
+                  if (primaryLayoutParams.leftMargin != initialLeftMargin) {
+                    primaryLayoutParams.leftMargin = initialLeftMargin;
+                    primaryButton.setLayoutParams(primaryLayoutParams);
+                  }
+                }
+                buttonContainer.setGravity(Gravity.END);
+              }
+
+              // TODO: b/364981820 - Use partner config to allow user to customize button width.
+              int availableFooterBarWidth =
+                  screenWidth
+                      - footerBarPaddingStart
+                      - footerBarPaddingEnd
+                      - footerBarButtonMiddleSpacing;
+              int maxButtonWidth = availableFooterBarWidth / 2;
+              if (isBothButtons(primaryButton, secondaryButton)) {
+                LayoutParams primaryLayoutParams = (LayoutParams) primaryButton.getLayoutParams();
+                LayoutParams secondaryLayoutParams =
+                    (LayoutParams) secondaryButton.getLayoutParams();
+
+                boolean isPrimaryTextTooLong = isTextTooLong(primaryButton, maxButtonWidth);
+                boolean isSecondaryTextTooLong = isTextTooLong(secondaryButton, maxButtonWidth);
+
+                if (isPrimaryTextTooLong || isSecondaryTextTooLong) {
+                  if (buttonContainer instanceof ButtonBarLayout) {
+                    ((ButtonBarLayout) buttonContainer).setStackedButtonForExpressiveStyle(true);
+                  }
+                  int stackButtonMiddleSpacing = footerBarButtonMiddleSpacing / 2;
+                  primaryLayoutParams.width = availableFooterBarWidth;
+                  primaryLayoutParams.bottomMargin = stackButtonMiddleSpacing;
+                  primaryButton.setLayoutParams(primaryLayoutParams);
+
+                  secondaryLayoutParams.width = availableFooterBarWidth;
+                  secondaryLayoutParams.topMargin = stackButtonMiddleSpacing;
+                  secondaryButton.setLayoutParams(secondaryLayoutParams);
+                } else {
+                  if (primaryLayoutParams != null) {
+                    primaryLayoutParams.width = maxButtonWidth;
+                    primaryLayoutParams.setMarginStart(footerBarButtonMiddleSpacing / 2);
+                    primaryButton.setLayoutParams(primaryLayoutParams);
+                  }
+                  if (secondaryLayoutParams != null) {
+                    secondaryLayoutParams.width = maxButtonWidth;
+                    secondaryLayoutParams.setMarginEnd(footerBarButtonMiddleSpacing / 2);
+                    secondaryButton.setLayoutParams(secondaryLayoutParams);
+                  }
+                }
+              } else if (isPrimaryButtonOnly(primaryButton, secondaryButton)) {
+                LayoutParams primaryLayoutParams = (LayoutParams) primaryButton.getLayoutParams();
+                if (primaryLayoutParams != null) {
+                  primaryLayoutParams.width = availableFooterBarWidth;
+                  primaryButton.setLayoutParams(primaryLayoutParams);
+                }
+              } else if (isSecondaryOnly(primaryButton, secondaryButton)) {
+                LayoutParams secondaryLayoutParams =
+                    (LayoutParams) secondaryButton.getLayoutParams();
+                if (secondaryLayoutParams != null) {
+                  secondaryLayoutParams.width = availableFooterBarWidth;
+                  secondaryButton.setLayoutParams(secondaryLayoutParams);
+                }
+              } else {
+                LOG.atInfo("There are no button visible in the footer bar.");
+              }
+            } else {
+              // Only allow primary button been shown on the screen if in the down button style.
+              if (getSecondaryButtonView() != null) {
+                getSecondaryButtonView().setVisibility(View.GONE);
+              }
+              setDownButtonStyle(getPrimaryButtonView());
+              if (!isTwoPaneLayout()) {
+                buttonContainer.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL);
+              } else {
+                buttonContainer.setGravity(Gravity.CENTER_VERTICAL);
+                int containerWidth = buttonContainer.getWidth();
+                Button downButtonView = getPrimaryButtonView();
+                LayoutParams primaryLayoutParams = (LayoutParams) downButtonView.getLayoutParams();
+                int halfContainerWidth = containerWidth / 2;
+                // Put down button to the center of the one side in two pane mode.
+                primaryLayoutParams.setMarginStart(
+                    (halfContainerWidth
+                        + (halfContainerWidth / 2 - downButtonView.getWidth() / 2)));
+                downButtonView.setLayoutParams(primaryLayoutParams);
+              }
+            }
+            buttonContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+          }
+        };
+
+    buttonContainer.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener);
+  }
+
+  // TODO: b/376153500 - Add a test case for button stack mechanism.
+  private boolean isTextTooLong(Button button, float maxButtonWidth) {
+    String text = button.getText().toString();
+    TextPaint textPaint = button.getPaint();
+
+    int buttonWidth = (int) maxButtonWidth - button.getPaddingLeft() - button.getPaddingRight();
+
+    // Generate a static layout to see if text requires switching lines.
+    StaticLayout staticLayout =
+        new StaticLayout(
+            text,
+            textPaint,
+            buttonWidth,
+            Alignment.ALIGN_CENTER,
+            /* spacingMult= */ 1.0f,
+            /* spacingAdd= */ 0.0f,
+            /* includePad= */ false);
+    return staticLayout.getLineCount() > 1;
+  }
+
+  private boolean isTwoPaneLayout() {
+    return context.getResources().getBoolean(R.bool.sucTwoPaneLayoutStyle);
+  }
+
+  private boolean isBothButtons(Button primaryButton, Button secondaryButton) {
+    boolean isPrimaryVisible =
+        primaryButton != null && primaryButton.getVisibility() == View.VISIBLE;
+    boolean isSecondaryVisible =
+        secondaryButton != null && secondaryButton.getVisibility() == View.VISIBLE;
+    LOG.atDebug(
+        "isPrimaryVisible=" + isPrimaryVisible + ", isSecondaryVisible=" + isSecondaryVisible);
+    return isPrimaryVisible && isSecondaryVisible;
+  }
+
+  private boolean isPrimaryButtonOnly(Button primaryButton, Button secondaryButton) {
+    boolean isPrimaryOnly = primaryButton != null && secondaryButton == null;
+    boolean isPrimaryOnlyButSecondaryInvisible =
+        (primaryButton != null)
+            && (secondaryButton != null && secondaryButton.getVisibility() != View.VISIBLE);
+    LOG.atDebug(
+        "isPrimaryOnly="
+            + isPrimaryOnly
+            + ", isPrimaryOnlyButSecondaryInvisible="
+            + isPrimaryOnlyButSecondaryInvisible);
+    return isPrimaryOnly || isPrimaryOnlyButSecondaryInvisible;
+  }
+
+  private boolean isSecondaryOnly(Button primaryButton, Button secondaryButton) {
+    boolean isSecondaryOnly = secondaryButton != null && primaryButton == null;
+    boolean isSecondaryOnlyButPrimaryInvisible =
+        (secondaryButton != null)
+            && (primaryButton != null && primaryButton.getVisibility() != View.VISIBLE);
+    LOG.atDebug(
+        "isSecondaryOnly="
+            + isSecondaryOnly
+            + ", isSecondaryOnlyButPrimaryInvisible="
+            + isSecondaryOnlyButPrimaryInvisible);
+    return isSecondaryOnly || isSecondaryOnlyButPrimaryInvisible;
+  }
+
+  private void setDownButtonStyle(Button button) {
+    // TODO: b/364121308 - Extract values as attributes.
+    int width =
+        context.getResources().getDimensionPixelSize(R.dimen.suc_glif_expressive_down_button_width);
+    int height =
+        context
+            .getResources()
+            .getDimensionPixelSize(R.dimen.suc_glif_expressive_down_button_height);
+
+    if (button != null) {
+      LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) button.getLayoutParams();
+      layoutParams.width = width;
+      layoutParams.height = height;
+      button.setLayoutParams(layoutParams);
+    }
+    setDownButtonRadius(button);
+  }
+
+  private void setDownButtonRadius(Button button) {
+    float radius =
+        context.getResources().getDimension(R.dimen.suc_glif_expressive_down_button_radius);
+    if (button != null) {
+      if (button instanceof MaterialButton) {
+        ((MaterialButton) button).setCornerRadius((int) radius);
+      } else {
+        GradientDrawable gradientDrawable = FooterButtonStyleUtils.getGradientDrawable(button);
+        if (gradientDrawable != null) {
+          gradientDrawable.setCornerRadius(radius);
         }
       }
     }
@@ -631,7 +990,9 @@ public class FooterBarMixin implements Mixin {
     int overrideTheme = footerButton.getTheme();
 
     // Set the default theme if theme is not set, or when running in setup flow.
-    if (footerButton.getTheme() == 0 || applyPartnerResources) {
+    if (footerButton.getTheme() == 0
+        || applyPartnerResources
+        || PartnerConfigHelper.isGlifExpressiveEnabled(context)) {
       overrideTheme = defaultPartnerTheme;
     }
     // TODO: Make sure customize attributes in theme can be applied during setup flow.
@@ -640,9 +1001,15 @@ public class FooterBarMixin implements Mixin {
     if (applyPartnerResources) {
       int color = PartnerConfigHelper.get(context).getColor(context, buttonBackgroundColorConfig);
       if (color == Color.TRANSPARENT) {
-        overrideTheme = R.style.SucPartnerCustomizationButton_Secondary;
+        overrideTheme =
+            PartnerConfigHelper.isGlifExpressiveEnabled(context)
+                ? R.style.SucGlifMaterialButton_Secondary
+                : R.style.SucPartnerCustomizationButton_Secondary;
       } else {
-        overrideTheme = R.style.SucPartnerCustomizationButton_Primary;
+        overrideTheme =
+            PartnerConfigHelper.isGlifExpressiveEnabled(context)
+                ? R.style.SucGlifMaterialButton_Primary
+                : R.style.SucPartnerCustomizationButton_Primary;
       }
     }
     return overrideTheme;
@@ -710,10 +1077,11 @@ public class FooterBarMixin implements Mixin {
         && getSecondaryButtonView().getVisibility() == View.VISIBLE;
   }
 
-  private FooterActionButton inflateButton(
+  private IFooterActionButton inflateButton(
       FooterButton footerButton, FooterButtonPartnerConfig footerButtonPartnerConfig) {
-    FooterActionButton button =
+    IFooterActionButton buttonImpl =
         createThemedButton(context, footerButtonPartnerConfig.getPartnerTheme());
+    Button button = (Button) buttonImpl;
     button.setId(View.generateViewId());
 
     // apply initial configuration into button view.
@@ -721,10 +1089,15 @@ public class FooterBarMixin implements Mixin {
     button.setOnClickListener(footerButton);
     button.setVisibility(footerButton.getVisibility());
     button.setEnabled(footerButton.isEnabled());
-    button.setFooterButton(footerButton);
-
+    if (buttonImpl instanceof MaterialFooterActionButton) {
+      ((MaterialFooterActionButton) buttonImpl).setFooterButton(footerButton);
+    } else if (button instanceof FooterActionButton) {
+      ((FooterActionButton) buttonImpl).setFooterButton(footerButton);
+    } else {
+      LOG.e("Set the footer button error!");
+    }
     footerButton.setOnButtonEventListener(createButtonEventListener(button.getId()));
-    return button;
+    return buttonImpl;
   }
 
   // TODO: Make sure customize attributes in theme can be applied during setup flow.
@@ -849,5 +1222,13 @@ public class FooterBarMixin implements Mixin {
   @TargetApi(VERSION_CODES.Q)
   public PersistableBundle getLoggingMetrics() {
     return metrics.getMetrics();
+  }
+
+  private void updateTextColorForButton(Button button, boolean enable, int color) {
+    if (enable) {
+      FooterButtonStyleUtils.updateButtonTextEnabledColor(button, color);
+    } else {
+      FooterButtonStyleUtils.updateButtonTextDisabledColor(button, color);
+    }
   }
 }

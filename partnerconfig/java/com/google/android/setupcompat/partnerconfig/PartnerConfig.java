@@ -355,6 +355,10 @@ public enum PartnerConfig {
   // The padding bottom of list items.
   CONFIG_ITEMS_PADDING_BOTTOM(PartnerConfigKey.KEY_ITEMS_PADDING_BOTTOM, ResourceType.DIMENSION),
 
+  // The corner radius of list items group.
+  CONFIG_ITEMS_GROUP_CORNER_RADIUS(
+      PartnerConfigKey.KEY_ITEMS_GROUP_CORNER_RADIUS, ResourceType.DIMENSION),
+
   // The minimum height of list items.
   CONFIG_ITEMS_MIN_HEIGHT(PartnerConfigKey.KEY_ITEMS_MIN_HEIGHT, ResourceType.DIMENSION),
 

@@ -85,12 +85,17 @@
         <attr name="sucFooterBarButtonAlignEnd" format="boolean" />
         <attr name="sucFooterBarButtonCornerRadius" format="dimension" />
         <attr name="sucFooterBarButtonFontFamily" format="string|reference" />
+        <attr name="sucFooterBarButtonMinHeight" format="dimension" />
         <attr name="sucFooterBarPaddingTop" format="dimension" />
         <attr name="sucFooterBarPaddingBottom" format="dimension" />
         <attr name="sucFooterBarPrimaryFooterBackground" format="color" />
         <attr name="sucFooterBarPrimaryFooterButton" format="reference" />
+        <attr name="sucFooterBarPrimaryFooterButtonEnabledTextColor" format="color" />
+        <attr name="sucFooterBarPrimaryFooterButtonDisabledTextColor" format="color" />
         <attr name="sucFooterBarSecondaryFooterBackground" format="color" />
         <attr name="sucFooterBarSecondaryFooterButton" format="reference" />
+        <attr name="sucFooterBarSecondaryFooterButtonEnabledTextColor" format="color" />
+        <attr name="sucFooterBarSecondaryFooterButtonDisabledTextColor" format="color" />
         <attr name="sucFooterBarButtonHighlightAlpha" format="float" />
         <attr name="sucFooterBarButtonColorControlHighlight" format="color" />
         <attr name="sucFooterBarButtonColorControlHighlightRipple" format="color" />
@@ -98,6 +103,10 @@
         <attr name="sucFooterBarPaddingStart" format="dimension" />
         <attr name="sucFooterBarPaddingEnd" format="dimension" />
         <attr name="sucFooterBarMinHeight" format="dimension" />
+        <attr name="sucFooterBarButtonMiddleSpacing" format="dimension" />
+        <attr name="sucFooterBarButtonFontWeight" format="integer" />
+        <attr name="sucFooterBarButtonTextSize" format="dimension" />
+        <attr name="sucFooterButtonTextLineSpacingExtra" format="dimension" />
     </declare-styleable>
 
     <declare-styleable name="SucHeaderMixin">
@@ -108,5 +117,9 @@
         <attr name="sucGlifIconMarginTop" format="dimension" />
         <attr name="sucHeaderContainerMarginBottom" format="dimension" />
     </declare-styleable>
+
+    <attr name="sucMaterialOutlinedButtonStyle" format="reference" />
+
+    <attr name="sucMaterialButtonStyle" format="reference" />
 
 </resources>

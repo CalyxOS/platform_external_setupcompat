@@ -117,6 +117,7 @@ import java.lang.annotation.RetentionPolicy;
   PartnerConfigKey.KEY_ITEMS_SUMMARY_FONT_FAMILY,
   PartnerConfigKey.KEY_ITEMS_PADDING_TOP,
   PartnerConfigKey.KEY_ITEMS_PADDING_BOTTOM,
+  PartnerConfigKey.KEY_ITEMS_GROUP_CORNER_RADIUS,
   PartnerConfigKey.KEY_ITEMS_MIN_HEIGHT,
   PartnerConfigKey.KEY_ITEMS_DIVIDER_SHOWN,
   PartnerConfigKey.KEY_PROGRESS_ILLUSTRATION_DEFAULT,
@@ -434,6 +435,9 @@ public @interface PartnerConfigKey {
 
   // The padding bottom of list items.
   String KEY_ITEMS_PADDING_BOTTOM = "setup_design_items_padding_bottom";
+
+  // The corner radius of list items group.
+  String KEY_ITEMS_GROUP_CORNER_RADIUS = "setup_design_items_group_corner_radius";
 
   // The minimum height of list items.
   String KEY_ITEMS_MIN_HEIGHT = "setup_design_items_min_height";

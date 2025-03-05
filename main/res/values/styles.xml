@@ -45,7 +45,7 @@
         <item name="android:theme">@style/SucPartnerCustomizationButton.Primary</item>
 
         <!-- Values used in styles -->
-        <item name="android:fontFamily" tools:targetApi="jelly_bean">?attr/sucFooterBarButtonFontFamily</item>
+        <item name="android:fontFamily">?attr/sucFooterBarButtonFontFamily</item>
         <item name="android:paddingLeft">?attr/sucFooterButtonPaddingStart</item>
         <item name="android:paddingStart" tools:ignore="NewApi">?attr/sucFooterButtonPaddingStart</item>
         <item name="android:paddingRight">?attr/sucFooterButtonPaddingEnd</item>
@@ -65,7 +65,7 @@
         <item name="android:theme">@style/SucPartnerCustomizationButton.Secondary</item>
 
         <!-- Values used in styles -->
-        <item name="android:fontFamily" tools:targetApi="jelly_bean">?attr/sucFooterBarButtonFontFamily</item>
+        <item name="android:fontFamily">?attr/sucFooterBarButtonFontFamily</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:paddingLeft">?attr/sucFooterButtonPaddingStart</item>
         <item name="android:paddingStart" tools:ignore="NewApi">?attr/sucFooterButtonPaddingStart</item>
@@ -79,4 +79,63 @@
         <item name="sucFooterBarButtonColorControlHighlight">@color/suc_customization_button_highlight_ripple</item>
     </style>
 
+    <style name="SucGlifMaterialButton.Primary" parent="Widget.Material3.Button">
+        <!-- This style can be applied to a button either as a "style" in XML, or as a theme in
+             ContextThemeWrapper. These self-referencing attributes make sure this is applied as
+             both to the button. -->
+        <item name="android:buttonStyle">@style/SucGlifMaterialButton.Primary</item>
+        <item name="android:theme">@style/SucGlifMaterialButton.Primary</item>
+
+        <!-- Values used in styles -->
+        <item name="android:fontFamily">?attr/sucFooterBarButtonFontFamily</item>
+        <item name="android:paddingLeft">?attr/sucFooterButtonPaddingStart</item>
+        <item name="android:paddingStart" tools:ignore="NewApi">?attr/sucFooterButtonPaddingStart</item>
+        <item name="android:paddingRight">?attr/sucFooterButtonPaddingEnd</item>
+        <item name="android:paddingEnd" tools:ignore="NewApi">?attr/sucFooterButtonPaddingEnd</item>
+        <item name="android:textAllCaps">?attr/sucFooterBarButtonAllCaps</item>
+        <item name="android:stateListAnimator" tools:ignore="NewApi">@null</item>
+        <item name="android:minHeight">?attr/sucFooterBarButtonMinHeight</item>
+        <item name="android:textFontWeight" tools:targetApi="p">?attr/sucFooterBarButtonFontWeight</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">?attr/sucFooterBarButtonTextSize</item>
+        <item name="android:lineSpacingExtra">?attr/sucFooterButtonTextLineSpacingExtra</item>
+
+        <!-- Values used in themes -->
+        <item name="android:buttonCornerRadius" tools:ignore="NewApi">?attr/sucFooterBarButtonCornerRadius</item>
+
+        <item name="viewInflaterClass">com.google.android.material.theme.MaterialComponentsViewInflater</item>
+        <item name="sucMaterialButtonStyle">@style/SucGlifMaterialButton.Primary</item>
+    </style>
+
+    <style name="SucGlifMaterialButton.Secondary" parent="Widget.Material3.Button.OutlinedButton">
+        <!-- This style can be applied to a button either as a "style" in XML, or as a theme in
+             ContextThemeWrapper. These self-referencing attributes make sure this is applied as
+             both to the button. -->
+        <item name="android:buttonStyle">@style/SucGlifMaterialButton.Secondary</item>
+        <item name="android:theme">@style/SucGlifMaterialButton.Secondary</item>
+
+        <!-- Values used in styles -->
+        <item name="android:fontFamily">?attr/sucFooterBarButtonFontFamily</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:paddingLeft">?attr/sucFooterButtonPaddingStart</item>
+        <item name="android:paddingStart" tools:ignore="NewApi">?attr/sucFooterButtonPaddingStart</item>
+        <item name="android:paddingRight">?attr/sucFooterButtonPaddingEnd</item>
+        <item name="android:paddingEnd" tools:ignore="NewApi">?attr/sucFooterButtonPaddingEnd</item>
+        <item name="android:textAllCaps">?attr/sucFooterBarButtonAllCaps</item>
+        <item name="android:minHeight">?attr/sucFooterBarButtonMinHeight</item>
+        <item name="android:textFontWeight" tools:targetApi="p">?attr/sucFooterBarButtonFontWeight</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">?attr/sucFooterBarButtonTextSize</item>
+        <item name="android:lineSpacingExtra">?attr/sucFooterButtonTextLineSpacingExtra</item>
+
+        <!-- Values used in themes -->
+        <item name="android:buttonCornerRadius" tools:ignore="NewApi">?attr/sucFooterBarButtonCornerRadius</item>
+        <item name="android:colorControlHighlight" tools:targetApi="lollipop">@color/suc_customization_button_highlight_ripple</item>
+        <item name="sucFooterBarButtonColorControlHighlight">@color/suc_customization_button_highlight_ripple</item>
+
+        <item name="viewInflaterClass">com.google.android.material.theme.MaterialComponentsViewInflater</item>
+        <item name="sucMaterialOutlinedButtonStyle">@style/SucGlifMaterialButton.Secondary</item>
+    </style>
 </resources>

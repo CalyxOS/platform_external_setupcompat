@@ -56,35 +56,13 @@ public final class BuildCompatUtils {
   }
 
   /**
-   * Implementation of BuildCompat.isAtLeast*() suitable for use in Setup
-   *
-   * <p>BuildCompat.isAtLeast*() can be changed by Android Release team, and once that is changed it
-   * may take weeks for that to propagate to stable/prerelease/experimental SDKs in Google3. Also it
-   * can be different in all these channels. This can cause random issues, especially with sidecars
-   * (i.e., the code running on R may not know that it runs on R).
-   *
-   * <p>This still should try using BuildCompat.isAtLeastR() as source of truth, but also checking
-   * for VERSION_SDK_INT and VERSION.CODENAME in case when BuildCompat implementation returned
-   * false. Note that both checks should be >= and not = to make sure that when Android version
-   * increases (i.e., from R to S), this does not stop working.
-   *
-   * <p>Supported configurations:
-   *
-   * <ul>
-   *   <li>For current Android release: while new API is not finalized yet (CODENAME =
-   *       "UpsideDownCake", SDK_INT = 33)
-   *   <li>For current Android release: when new API is finalized (CODENAME = "REL", SDK_INT = 34)
-   *   <li>For next Android release (CODENAME = "VanillaIceCream", SDK_INT = 35+)
-   * </ul>
-   *
-   * <p>Note that Build.VERSION_CODES.T cannot be used here until final SDK is available in all
-   * channels, because it is equal to Build.VERSION_CODES.CUR_DEVELOPMENT before API finalization.
+   * Implementation of BuildCompat.isAtLeastU() suitable for use in Setup
    *
    * @return Whether the current OS version is higher or equal to U.
    */
+  @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
   public static boolean isAtLeastU() {
-    return (Build.VERSION.CODENAME.equals("REL") && Build.VERSION.SDK_INT >= 34)
-        || isAtLeastPreReleaseCodename("UpsideDownCake");
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
   }
 
   /**
@@ -95,17 +73,6 @@ public final class BuildCompatUtils {
   @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
   public static boolean isAtLeastV() {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
-  }
-
-  private static boolean isAtLeastPreReleaseCodename(String codename) {
-    // Special case "REL", which means the build is not a pre-release build.
-    if (Build.VERSION.CODENAME.equals("REL")) {
-      return false;
-    }
-
-    // Otherwise lexically compare them. Return true if the build codename is equal to or
-    // greater than the requested codename.
-    return Build.VERSION.CODENAME.compareTo(codename) >= 0;
   }
 
   private BuildCompatUtils() {}
