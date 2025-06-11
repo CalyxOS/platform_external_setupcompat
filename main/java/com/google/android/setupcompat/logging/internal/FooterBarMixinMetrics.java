@@ -23,10 +23,13 @@ import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 import androidx.annotation.StringDef;
 import androidx.annotation.VisibleForTesting;
+import com.google.android.setupcompat.util.Logger;
 import java.lang.annotation.Retention;
 
 /** Uses to log internal event footer button metric */
 public class FooterBarMixinMetrics {
+  private static final Logger LOG = new Logger("FooterBarMixinMetrics");
+
   @VisibleForTesting
   public static final String EXTRA_PRIMARY_BUTTON_VISIBILITY = "PrimaryButtonVisibility";
 
@@ -54,7 +57,8 @@ public class FooterBarMixinMetrics {
     String INVISIBLE = "Invisible";
   }
 
-  @FooterButtonVisibility String primaryButtonVisibility = FooterButtonVisibility.UNKNOWN;
+  @VisibleForTesting @FooterButtonVisibility
+  public String primaryButtonVisibility = FooterButtonVisibility.UNKNOWN;
 
   @FooterButtonVisibility String secondaryButtonVisibility = FooterButtonVisibility.UNKNOWN;
 
@@ -107,7 +111,7 @@ public class FooterBarMixinMetrics {
     if (!FooterButtonVisibility.VISIBLE_USING_XML.equals(originalVisibility)
         && !FooterButtonVisibility.VISIBLE.equals(originalVisibility)
         && !FooterButtonVisibility.INVISIBLE.equals(originalVisibility)) {
-      throw new IllegalStateException("Illegal visibility state: " + originalVisibility);
+      LOG.w("Illegal visibility state: " + originalVisibility);
     }
 
     if (isVisible && FooterButtonVisibility.INVISIBLE.equals(originalVisibility)) {

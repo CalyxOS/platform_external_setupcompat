@@ -23,12 +23,18 @@ import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
 import androidx.annotation.VisibleForTesting;
 import com.google.android.setupcompat.internal.FocusChangedMetricHelper;
 import com.google.android.setupcompat.internal.LifecycleFragment;
@@ -40,6 +46,7 @@ import com.google.android.setupcompat.logging.LoggingObserver;
 import com.google.android.setupcompat.logging.LoggingObserver.SetupCompatUiEvent.LayoutInflatedEvent;
 import com.google.android.setupcompat.logging.MetricKey;
 import com.google.android.setupcompat.logging.SetupMetricsLogger;
+import com.google.android.setupcompat.partnerconfig.PartnerConfig;
 import com.google.android.setupcompat.partnerconfig.PartnerConfigHelper;
 import com.google.android.setupcompat.template.FooterBarMixin;
 import com.google.android.setupcompat.template.FooterButton;
@@ -49,6 +56,7 @@ import com.google.android.setupcompat.util.BuildCompatUtils;
 import com.google.android.setupcompat.util.Logger;
 import com.google.android.setupcompat.util.WizardManagerHelper;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import org.jspecify.annotations.NonNull;
 
 /** A templatization layout with consistent style used in Setup Wizard or app itself. */
 public class PartnerCustomizationLayout extends TemplateLayout {
@@ -74,9 +82,13 @@ public class PartnerCustomizationLayout extends TemplateLayout {
    */
   private boolean useDynamicColor;
 
-  private Activity activity;
+  protected Activity activity;
 
   private PersistableBundle layoutTypeBundle;
+
+  @VisibleForTesting FragmentLifecycleCallbacks fragmentLifecycleCallbacks;
+
+  private int footerBarPaddingBottom;
 
   @CanIgnoreReturnValue
   public PartnerCustomizationLayout(Context context) {
@@ -125,6 +137,18 @@ public class PartnerCustomizationLayout extends TemplateLayout {
 
     a.recycle();
 
+    // Get the footer bar default padding bottom value.
+    TypedArray footerBarMixinAttrs =
+        getContext().obtainStyledAttributes(attrs, R.styleable.SucFooterBarMixin, defStyleAttr, 0);
+    int defaultPadding =
+        footerBarMixinAttrs.getDimensionPixelSize(
+            R.styleable.SucFooterBarMixin_sucFooterBarPaddingVertical, 0);
+    footerBarPaddingBottom =
+        footerBarMixinAttrs.getDimensionPixelSize(
+            R.styleable.SucFooterBarMixin_sucFooterBarPaddingBottom, defaultPadding);
+
+    footerBarMixinAttrs.recycle();
+
     if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && layoutFullscreen) {
       setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
@@ -169,6 +193,13 @@ public class PartnerCustomizationLayout extends TemplateLayout {
 
     activity = lookupActivityFromContext(getContext());
 
+    LOG.atDebug(
+        "Flag of isEnhancedSetupDesignMetricsEnabled="
+            + PartnerConfigHelper.isEnhancedSetupDesignMetricsEnabled(getContext()));
+    if (PartnerConfigHelper.isEnhancedSetupDesignMetricsEnabled(getContext())) {
+      tryRegisterFragmentCallbacks(activity);
+    }
+
     boolean isSetupFlow = WizardManagerHelper.isAnySetupWizard(activity.getIntent());
 
     TypedArray a =
@@ -206,6 +237,28 @@ public class PartnerCustomizationLayout extends TemplateLayout {
             + useFullDynamicColorAttr);
   }
 
+  private void printFragmentInfoAtDebug(Fragment fragment, String tag) {
+    if (fragment == null) {
+      return;
+    }
+    int fragmentId = fragment.getId();
+    String fragmentName = tryGetResourceEntryName(fragmentId);
+    LOG.atDebug(
+        tag
+            + " fragment name="
+            + fragment.getClass().getSimpleName()
+            + ", tag="
+            + fragment.getTag()
+            + ", id="
+            + fragment.getId()
+            + ", name="
+            + fragmentName);
+  }
+
+  private String tryGetResourceEntryName(int fragmentId) {
+    return (fragmentId == 0) ? "" : getResources().getResourceEntryName(fragmentId);
+  }
+
   @Override
   protected ViewGroup findContainer(int containerId) {
     if (containerId == 0) {
@@ -217,7 +270,14 @@ public class PartnerCustomizationLayout extends TemplateLayout {
   @Override
   protected void onAttachedToWindow() {
     super.onAttachedToWindow();
-    LifecycleFragment.attachNow(activity);
+    LifecycleFragment lifecycleFragment =
+        LifecycleFragment.attachNow(activity, this::logFooterButtonMetrics);
+    if (lifecycleFragment == null) {
+      LOG.atDebug(
+          "Unable to attach lifecycle fragment to the host activity. Activity="
+              + ((activity != null) ? activity.getClass().getSimpleName() : "null"));
+    }
+
     if (WizardManagerHelper.isAnySetupWizard(activity.getIntent())) {
       getViewTreeObserver().addOnWindowFocusChangeListener(windowFocusChangeListener);
     }
@@ -257,6 +317,79 @@ public class PartnerCustomizationLayout extends TemplateLayout {
           CustomEvent.create(MetricKey.get("SetupCompatMetrics", activity), persistableBundle));
     }
     getViewTreeObserver().removeOnWindowFocusChangeListener(windowFocusChangeListener);
+
+    if (PartnerConfigHelper.isEnhancedSetupDesignMetricsEnabled(getContext())) {
+      tryUnregisterFragmentCallbacks(activity);
+    }
+  }
+
+  private void logFooterButtonMetrics(PersistableBundle bundle) {
+    if (VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        && activity != null
+        && WizardManagerHelper.isAnySetupWizard(activity.getIntent())
+        && PartnerConfigHelper.isEnhancedSetupDesignMetricsEnabled(getContext())) {
+      FooterBarMixin footerBarMixin = getMixin(FooterBarMixin.class);
+
+      if (footerBarMixin == null
+          || (footerBarMixin.getPrimaryButton() == null
+              && footerBarMixin.getSecondaryButton() == null)) {
+        LOG.atDebug("Skip footer button logging because no footer buttons.");
+        return;
+      }
+
+      footerBarMixin.onDetachedFromWindow();
+      FooterButton primaryButton = footerBarMixin.getPrimaryButton();
+      FooterButton secondaryButton = footerBarMixin.getSecondaryButton();
+      PersistableBundle primaryButtonMetrics =
+          primaryButton != null
+              ? primaryButton.getMetrics("PrimaryFooterButton")
+              : PersistableBundle.EMPTY;
+      PersistableBundle secondaryButtonMetrics =
+          secondaryButton != null
+              ? secondaryButton.getMetrics("SecondaryFooterButton")
+              : PersistableBundle.EMPTY;
+
+      PersistableBundle persistableBundle =
+          PersistableBundles.mergeBundles(
+              footerBarMixin.getLoggingMetrics(),
+              primaryButtonMetrics,
+              secondaryButtonMetrics,
+              bundle);
+
+      SetupMetricsLogger.logCustomEvent(
+          getContext(),
+          CustomEvent.create(MetricKey.get("FooterButtonMetrics", activity), persistableBundle));
+    }
+  }
+
+  private void tryRegisterFragmentCallbacks(Activity activity) {
+    if ((activity instanceof FragmentActivity fragmentActivity)) {
+      fragmentLifecycleCallbacks =
+          new FragmentLifecycleCallbacks() {
+            @Override
+            public void onFragmentAttached(
+                @NonNull FragmentManager fm, @NonNull Fragment f, @NonNull Context context) {
+              printFragmentInfoAtDebug(f, "onFragmentAttached");
+              getMixin(FooterBarMixin.class).setFragmentInfo(f);
+              super.onFragmentAttached(fm, f, context);
+            }
+          };
+
+      fragmentActivity
+          .getSupportFragmentManager()
+          .registerFragmentLifecycleCallbacks(fragmentLifecycleCallbacks, true);
+      LOG.atDebug(
+          "Register the onFragmentAttached lifecycle callbacks to "
+              + activity.getClass().getSimpleName());
+    }
+  }
+
+  private void tryUnregisterFragmentCallbacks(Activity activity) {
+    if ((activity instanceof FragmentActivity fragmentActivity)) {
+      fragmentActivity
+          .getSupportFragmentManager()
+          .unregisterFragmentLifecycleCallbacks(fragmentLifecycleCallbacks);
+    }
   }
 
   /**
@@ -358,5 +491,36 @@ public class PartnerCustomizationLayout extends TemplateLayout {
             FocusChangedMetricHelper.getScreenName(activity),
             FocusChangedMetricHelper.getExtraBundle(
                 activity, PartnerCustomizationLayout.this, hasFocus));
+  }
+
+  @Override
+  public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+    // TODO: b/398407478 - Add test case for edge to edge to layout from library.
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(getContext())) {
+      // Edge to edge extend the footer bar padding bottom to the navigation bar height.
+      if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && insets.getSystemWindowInsetBottom() > 0) {
+        LOG.atDebug("NavigationBarHeight: " + insets.getSystemWindowInsetBottom());
+        FooterBarMixin footerBarMixin = getMixin(FooterBarMixin.class);
+        LinearLayout buttonContainer = footerBarMixin.getButtonContainer();
+        if (footerBarMixin != null && footerBarMixin.getButtonContainer() != null) {
+          if (PartnerConfigHelper.get(getContext())
+              .isPartnerConfigAvailable(PartnerConfig.CONFIG_FOOTER_BUTTON_PADDING_BOTTOM)) {
+            footerBarPaddingBottom =
+                (int)
+                    PartnerConfigHelper.get(getContext())
+                        .getDimension(
+                            getContext(), PartnerConfig.CONFIG_FOOTER_BUTTON_PADDING_BOTTOM);
+          }
+          // Adjust footer bar padding to account for the navigation bar, ensuring
+          // it extends to the bottom of the screen and with proper bottom padding.
+          buttonContainer.setPadding(
+              buttonContainer.getPaddingLeft(),
+              buttonContainer.getPaddingTop(),
+              buttonContainer.getPaddingRight(),
+              footerBarPaddingBottom + insets.getSystemWindowInsetBottom());
+        }
+      }
+    }
+    return super.onApplyWindowInsets(insets);
   }
 }

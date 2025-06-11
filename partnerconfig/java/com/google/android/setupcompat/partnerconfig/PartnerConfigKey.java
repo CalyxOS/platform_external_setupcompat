@@ -69,6 +69,7 @@ import java.lang.annotation.RetentionPolicy;
   PartnerConfigKey.KEY_HEADER_TEXT_COLOR,
   PartnerConfigKey.KEY_HEADER_FONT_FAMILY,
   PartnerConfigKey.KEY_HEADER_FONT_WEIGHT,
+  PartnerConfigKey.KEY_HEADER_FONT_VARIATION_SETTINGS,
   PartnerConfigKey.KEY_HEADER_AREA_BACKGROUND_COLOR,
   PartnerConfigKey.KEY_HEADER_TEXT_MARGIN_TOP,
   PartnerConfigKey.KEY_HEADER_TEXT_MARGIN_BOTTOM,
@@ -295,6 +296,9 @@ public @interface PartnerConfigKey {
 
   // Font weight of the header
   String KEY_HEADER_FONT_WEIGHT = "setup_design_header_font_weight";
+
+  // Font weight of the header
+  String KEY_HEADER_FONT_VARIATION_SETTINGS = "setup_design_header_font_variation_settings";
 
   // Margin top of the header text
   String KEY_HEADER_TEXT_MARGIN_TOP = "setup_design_header_text_margin_top";

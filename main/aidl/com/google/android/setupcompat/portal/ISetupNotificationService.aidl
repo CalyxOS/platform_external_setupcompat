@@ -37,4 +37,7 @@ interface ISetupNotificationService {
 
   /** Checks portal avaailable or not. */
   boolean isPortalAvailable() = 4;
+
+  /** Whether the portal is ready to register progress service or not. */
+  boolean isPortalReady() = 5;
 }

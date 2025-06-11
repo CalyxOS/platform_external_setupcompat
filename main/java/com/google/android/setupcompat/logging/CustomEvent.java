@@ -215,6 +215,6 @@ public final class CustomEvent implements Parcelable {
     }
   }
 
-  @VisibleForTesting static final int MAX_STR_LENGTH = 50;
+  @VisibleForTesting public static final int MAX_STR_LENGTH = 50;
   @VisibleForTesting static final int MIN_BUNDLE_KEY_LENGTH = 3;
 }

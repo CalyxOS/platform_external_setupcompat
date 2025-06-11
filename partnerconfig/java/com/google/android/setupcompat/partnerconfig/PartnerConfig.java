@@ -189,6 +189,10 @@ public enum PartnerConfig {
   // Font weight of the header
   CONFIG_HEADER_FONT_WEIGHT(PartnerConfigKey.KEY_HEADER_FONT_WEIGHT, ResourceType.INTEGER),
 
+  // Font variation_settings of the header
+  CONFIG_HEADER_FONT_VARIATION_SETTINGS(
+      PartnerConfigKey.KEY_HEADER_FONT_VARIATION_SETTINGS, ResourceType.STRING),
+
   // Margin top of the header text
   CONFIG_HEADER_TEXT_MARGIN_TOP(
       PartnerConfigKey.KEY_HEADER_TEXT_MARGIN_TOP, ResourceType.DIMENSION),

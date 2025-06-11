@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.StyleRes;
+import androidx.annotation.VisibleForTesting;
 import com.google.android.setupcompat.R;
 import com.google.android.setupcompat.logging.CustomEvent;
 import com.google.android.setupcompat.logging.LoggingObserver;
@@ -38,15 +39,17 @@ import com.google.android.setupcompat.logging.LoggingObserver.InteractionType;
 import com.google.android.setupcompat.logging.LoggingObserver.SetupCompatUiEvent.ButtonInteractionEvent;
 import java.lang.annotation.Retention;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Definition of a footer button. Clients can use this class to customize attributes like text,
  * button type and click listener, and FooterBarMixin will inflate a corresponding Button view.
  */
 public final class FooterButton implements OnClickListener {
-  private static final String KEY_BUTTON_ON_CLICK_COUNT = "_onClickCount";
-  private static final String KEY_BUTTON_TEXT = "_text";
-  private static final String KEY_BUTTON_TYPE = "_type";
+  @VisibleForTesting static final String KEY_BUTTON_ON_CLICK_COUNT = "_onClickCount";
+  @VisibleForTesting static final String KEY_BUTTON_TEXT = "_text";
+  @VisibleForTesting static final String KEY_BUTTON_TEXT_RESOURCE_NAME = "_textResName";
+  @VisibleForTesting static final String KEY_BUTTON_TYPE = "_type";
 
   @ButtonType private final int buttonType;
   private CharSequence text;
@@ -60,6 +63,7 @@ public final class FooterButton implements OnClickListener {
   private int clickCount = 0;
   private Locale locale;
   private int direction;
+  private String textResourceName;
 
   public FooterButton(Context context, AttributeSet attrs) {
     TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.SucFooterButton);
@@ -89,7 +93,8 @@ public final class FooterButton implements OnClickListener {
       @StyleRes int theme,
       Locale locale,
       int direction,
-      int visibility) {
+      int visibility,
+      String textResourceName) {
     this.text = text;
     onClickListener = listener;
     this.buttonType = buttonType;
@@ -97,6 +102,7 @@ public final class FooterButton implements OnClickListener {
     this.locale = locale;
     this.direction = direction;
     this.visibility = visibility;
+    this.textResourceName = textResourceName;
   }
 
   /** Returns the text that this footer button is displaying. */
@@ -185,6 +191,7 @@ public final class FooterButton implements OnClickListener {
 
   /** Sets the text to be displayed using a string resource identifier. */
   public void setText(Context context, @StringRes int resId) {
+    textResourceName = getTextResourceName(context, resId);
     setText(context.getText(resId));
   }
 
@@ -238,6 +245,14 @@ public final class FooterButton implements OnClickListener {
 
   void setLoggingObserver(LoggingObserver loggingObserver) {
     this.loggingObserver = loggingObserver;
+  }
+
+  @VisibleForTesting
+  static String getTextResourceName(Context context, int resId) {
+    if (context != null && context.getResources() != null && resId != 0) {
+      return context.getResources().getResourceEntryName(resId);
+    }
+    return "";
   }
 
   /** Interface definition for a callback to be invoked when footer button API has set. */
@@ -349,6 +364,11 @@ public final class FooterButton implements OnClickListener {
         buttonName + KEY_BUTTON_TEXT, CustomEvent.trimsStringOverMaxLength(getText().toString()));
     bundle.putString(buttonName + KEY_BUTTON_TYPE, getButtonTypeName());
     bundle.putInt(buttonName + KEY_BUTTON_ON_CLICK_COUNT, clickCount);
+    if (textResourceName != null && !Objects.equals(textResourceName, "")) {
+      bundle.putString(
+          buttonName + KEY_BUTTON_TEXT_RESOURCE_NAME,
+          CustomEvent.trimsStringOverMaxLength(textResourceName));
+    }
     return bundle;
   }
 
@@ -383,6 +403,7 @@ public final class FooterButton implements OnClickListener {
     private int theme = 0;
 
     private int visibility = View.VISIBLE;
+    private String textResourceName = "";
 
     public Builder(@NonNull Context context) {
       this.context = context;
@@ -396,6 +417,7 @@ public final class FooterButton implements OnClickListener {
 
     /** Sets the {@code text} of FooterButton by resource. */
     public Builder setText(@StringRes int text) {
+      this.textResourceName = getTextResourceName(context, text);
       this.text = context.getString(text);
       return this;
     }
@@ -438,7 +460,14 @@ public final class FooterButton implements OnClickListener {
 
     public FooterButton build() {
       return new FooterButton(
-          text, onClickListener, buttonType, theme, locale, direction, visibility);
+          text,
+          onClickListener,
+          buttonType,
+          theme,
+          locale,
+          direction,
+          visibility,
+          textResourceName);
     }
   }
 }

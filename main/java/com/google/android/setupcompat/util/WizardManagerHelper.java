@@ -71,6 +71,14 @@ public final class WizardManagerHelper {
   public static final String EXTRA_IS_PORTAL_SETUP = "portalSetup";
 
   /**
+   * Extra for including a persistable map of Onboarding Node Id to MetadataStore.
+   *
+   * <p>This will only be read and used by loading screens. Other screens should just pass this
+   * forwards.
+   */
+  public static final String EXTRA_PENDING_ACTIVITY_METADATA = "pendingActivityMetadata";
+
+  /**
    * Extra for notifying an Activity that it is inside the any setup flow.
    *
    * <p>Apps that target API levels below {@link android.os.Build.VERSION_CODES#Q} is able to
@@ -133,6 +141,8 @@ public final class WizardManagerHelper {
    */
   public static void copyWizardManagerExtras(Intent srcIntent, Intent dstIntent) {
     dstIntent.putExtra(EXTRA_WIZARD_BUNDLE, srcIntent.getBundleExtra(EXTRA_WIZARD_BUNDLE));
+    dstIntent.putExtra(
+        EXTRA_PENDING_ACTIVITY_METADATA, srcIntent.getBundleExtra(EXTRA_PENDING_ACTIVITY_METADATA));
     for (String key :
         Arrays.asList(
             EXTRA_IS_FIRST_RUN,

@@ -21,10 +21,13 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.util.AttributeSet;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
+import com.google.android.setupcompat.partnerconfig.PartnerConfigHelper;
+import com.google.android.setupcompat.util.Logger;
 
 /**
  * A FrameLayout subclass that will responds to onApplyWindowInsets to draw a drawable in the top
@@ -36,6 +39,8 @@ import android.widget.FrameLayout;
  * is lower than Lollipop.
  */
 public class StatusBarBackgroundLayout extends FrameLayout {
+
+  private static final Logger LOG = new Logger("StatusBarBgLayout");
 
   private Drawable statusBarBackground;
   private Object lastInsets; // Use generic Object type for compatibility
@@ -70,7 +75,8 @@ public class StatusBarBackgroundLayout extends FrameLayout {
       if (lastInsets != null) {
         final int insetTop = ((WindowInsets) lastInsets).getSystemWindowInsetTop();
         if (insetTop > 0) {
-          statusBarBackground.setBounds(0, 0, getWidth(), insetTop);
+          statusBarBackground.setBounds(
+              /* left= */ 0, /* top= */ 0, /* right= */ getWidth(), /* bottom= */ insetTop);
           statusBarBackground.draw(canvas);
         }
       }
@@ -92,6 +98,18 @@ public class StatusBarBackgroundLayout extends FrameLayout {
 
   @Override
   public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+    // TODO: b/398407478 - Add test case for edge to edge to layout from library.
+    if (PartnerConfigHelper.isGlifExpressiveEnabled(getContext())) {
+      if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && insets.getSystemWindowInsetBottom() > 0) {
+        LOG.atDebug("NavigationBarHeight: " + insets.getSystemWindowInsetBottom());
+        insets =
+            insets.replaceSystemWindowInsets(
+                insets.getSystemWindowInsetLeft(),
+                insets.getSystemWindowInsetTop(),
+                insets.getSystemWindowInsetRight(),
+                /* bottom= */ 0);
+      }
+    }
     lastInsets = insets;
     return super.onApplyWindowInsets(insets);
   }

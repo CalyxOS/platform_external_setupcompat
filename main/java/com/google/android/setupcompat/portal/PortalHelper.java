@@ -141,6 +141,12 @@ public class PortalHelper {
     }
   }
 
+  /**
+   * Returns true when the SetupWizard Portal is enabled.
+   *
+   * @param context A context instance.
+   * @param listener Result listener.
+   */
   public static void isPortalAvailable(
       @NonNull Context context, @NonNull final PortalAvailableResultListener listener) {
     ServiceConnection connection =
@@ -173,6 +179,51 @@ public class PortalHelper {
     }
   }
 
+  /**
+   * Returns true when the portal is ready to register progress service.
+   *
+   * @param context A context instance.
+   * @param listener The listener for the result.
+   */
+  public static void isPortalReady(
+      @NonNull Context context, @NonNull final PortalReadyToRegisterResultListener listener) {
+    ServiceConnection connection =
+        new ServiceConnection() {
+          @Override
+          public void onServiceConnected(ComponentName name, IBinder binder) {
+            if (binder != null) {
+              ISetupNotificationService service =
+                  ISetupNotificationService.Stub.asInterface(binder);
+
+              try {
+                listener.onResult(service.isPortalReady());
+              } catch (RemoteException e) {
+                LOG.e("Failed to invoke SetupNotificationService#isPortalAvailable");
+                listener.onResult(false);
+              }
+            }
+            context.unbindService(this);
+          }
+
+          @Override
+          public void onServiceDisconnected(ComponentName name) {}
+        };
+
+    if (!bindSetupNotificationService(context, connection)) {
+      LOG.e(
+          "Failed to bind SetupNotificationService. Do you have permission"
+              + " \"com.google.android.setupwizard.SETUP_PROGRESS_SERVICE\"");
+      listener.onResult(false);
+    }
+  }
+
+  /**
+   * To query is the ProgressService already register in the portal or not.
+   *
+   * @param context A context instance.
+   * @param component The component of the progress service.
+   * @param listener The result listener.
+   */
   public static void isProgressServiceAlive(
       @NonNull final Context context,
       @NonNull final ProgressServiceComponent component,
@@ -260,20 +311,31 @@ public class PortalHelper {
     void onFailure(Throwable throwable);
   }
 
+  /** A callback for accepting the results of SetupNotificationService. */
   public interface RegisterNotificationCallback {
     void onSuccess();
 
     void onFailure(Throwable throwable);
   }
 
+  /** The listener interface that is used to notify the caller for the result of {@link PortalHelper#isPortalAvailable(Context, PortalAvailableResultListener)}.  */
+
   public interface ProgressServiceAliveResultListener {
     void onResult(boolean isAlive);
   }
+
+  /** The listener interface that is used to notify the caller for the result of {@link PortalHelper#isPortalAvailable(Context, PortalAvailableResultListener)}. */
 
   public interface PortalAvailableResultListener {
     void onResult(boolean isAvailable);
   }
 
+  /** The listener interface that is used to notify the caller for the result of {@link PortalHelper#isPortalReady(Context, PortalReadyToRegisterResultListener)}. */
+  public interface PortalReadyToRegisterResultListener {
+    void onResult(boolean isReady);
+  }
+
+  /** A data class that set the remaining size and convert to {@link android.os.Bundle}. */
   public static class RemainingValueBuilder {
     private final Bundle bundle = new Bundle();
 
